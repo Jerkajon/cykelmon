@@ -3,10 +3,19 @@ import { ObstacleSpawner } from '../systems/ObstacleSpawner.js';
 import { PokemonSpawner } from '../systems/PokemonSpawner.js';
 import { StickerBook } from '../systems/StickerBook.js';
 import { createStorage } from '../utils/storage.js';
+import { POKEMON } from '../data/pokemon.js';
+import { BIOMES, biomeById } from '../data/biomes.js';
+import { BiomeManager } from '../systems/BiomeManager.js';
 
 export default class GameScene extends Phaser.Scene {
   constructor() {
     super({ key: 'GameScene' });
+  }
+
+  preload() {
+    for (const p of POKEMON) {
+      this.load.image(`pokemon-${p.id}`, `pokemon/${p.id}.png`);
+    }
   }
 
   create() {
@@ -67,18 +76,39 @@ export default class GameScene extends Phaser.Scene {
     });
     this.obstacles = this.physics.add.group({ allowGravity: false, immovable: true });
 
-    // Procedural sten-textur
-    const rockKey = 'obstacle-rock';
-    if (!this.textures.exists(rockKey)) {
-      const g = this.add.graphics();
-      g.fillStyle(0x808080, 1);
-      g.fillCircle(20, 20, 18);
-      g.fillStyle(0x606060, 1);
-      g.fillCircle(15, 18, 5);
-      g.fillCircle(25, 22, 4);
-      g.generateTexture(rockKey, 40, 40);
-      g.destroy();
+    // Procedural placeholder-texturer för alla obstacle-typer
+    const obstacleColors = {
+      rock: 0x808080,
+      log: 0x8b5a2b,
+      puddle: 0x60a5fa,
+      shell: 0xfca5a5,
+      stalagmite: 0x6b7280,
+    };
+    for (const [type, color] of Object.entries(obstacleColors)) {
+      const k = `obstacle-${type}`;
+      if (!this.textures.exists(k)) {
+        const g = this.add.graphics();
+        g.fillStyle(color, 1);
+        g.fillRect(0, 5, 40, 35);
+        g.fillStyle(0x000000, 0.3);
+        g.fillRect(2, 35, 36, 5);
+        g.generateTexture(k, 40, 40);
+        g.destroy();
+      }
     }
+
+    // Biom-manager
+    this.biomeManager = new BiomeManager({
+      biomes: BIOMES,
+      rotationMs: 30000,
+      onSwitch: (b) => this.handleBiomeSwitch(b),
+    });
+
+    const startBiome = this.biomeManager.current();
+    this.cameras.main.setBackgroundColor(startBiome.bgColor);
+
+    // Spawners initieras med startbiomets data.
+    this.obstacleSpawner.setObstacleTypes(startBiome.obstacleTypes);
 
     this.physics.add.overlap(this.bike, this.obstacles, (bike, obstacle) => {
       this.handleBonk(obstacle);
@@ -91,27 +121,14 @@ export default class GameScene extends Phaser.Scene {
       key: 'pokemoncykelspel.stickers',
     });
 
-    // Pokémon-spawner (placeholder: bara id 25 = Pikachu)
+    // Pokémon-spawner med startbiomets ids
     this.pokemonSpawner = new PokemonSpawner({
-      pokemonIds: [25],
+      pokemonIds: startBiome.pokemonIds,
       minIntervalMs: 3000,
       spawnWindowMs: 2000,
       shinyChance: 1 / 50,
     });
     this.pokemons = this.physics.add.group({ allowGravity: false });
-
-    // Procedural placeholder-textur för "pikachu"
-    const pikaKey = 'pokemon-25';
-    if (!this.textures.exists(pikaKey)) {
-      const g = this.add.graphics();
-      g.fillStyle(0xfacc15, 1);
-      g.fillCircle(20, 20, 16);
-      g.fillStyle(0x000000, 1);
-      g.fillCircle(15, 17, 2);
-      g.fillCircle(25, 17, 2);
-      g.generateTexture(pikaKey, 40, 40);
-      g.destroy();
-    }
 
     // Tracking för pokemon-spawner gap-regel
     this.timeSinceLastObstacleSpawn = 9999;
@@ -131,7 +148,7 @@ export default class GameScene extends Phaser.Scene {
   spawnObstacle(type) {
     const w = this.scale.width;
     const groundY = this.scale.height - 80;
-    const key = type === 'rock' ? 'obstacle-rock' : 'obstacle-rock';
+    const key = `obstacle-${type}`;
     const obstacle = this.obstacles.create(w + 50, groundY - 30, key);
     obstacle.setVelocityX(-this.scrollSpeed);
     obstacle.body.setSize(30, 30);
@@ -181,9 +198,16 @@ export default class GameScene extends Phaser.Scene {
     });
   }
 
+  handleBiomeSwitch(biome) {
+    this.cameras.main.setBackgroundColor(biome.bgColor);
+    this.obstacleSpawner.setObstacleTypes(biome.obstacleTypes);
+    this.pokemonSpawner.setPokemonIds(biome.pokemonIds);
+  }
+
   update(time, delta) {
     const inBonk = this.time.now < this.bonkUntilTime;
     const effectiveSpeed = inBonk ? this.scrollSpeed * 0.4 : this.scrollSpeed;
+    this.biomeManager.tick(delta);
     this.ground.tilePositionX += (effectiveSpeed * delta) / 1000;
 
     const airborne = !(this.bike.body.blocked.down || this.bike.body.touching.down);
