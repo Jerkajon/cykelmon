@@ -135,6 +135,15 @@ export default class GameScene extends Phaser.Scene {
 
     this.physics.add.overlap(this.bike, this.pokemons, (bike, mon) => this.handlePokemonPickup(mon));
 
+    const homeBtn = this.add.text(20, 20, '← Hem', {
+      fontFamily: 'Arial',
+      fontSize: '24px',
+      color: '#ffffff',
+      backgroundColor: '#000000aa',
+      padding: { x: 10, y: 5 },
+    }).setInteractive({ useHandCursor: true }).setScrollFactor(0).setDepth(1000);
+    homeBtn.on('pointerdown', () => this.scene.start('HomeScene'));
+
     // Tap → hopp om vi står på marken.
     this.input.on('pointerdown', () => this.tryJump());
   }
