@@ -77,6 +77,11 @@ export default class GameScene extends Phaser.Scene {
       g.destroy();
     }
 
+    this.physics.add.overlap(this.bike, this.obstacles, (bike, obstacle) => {
+      this.handleBonk(obstacle);
+    });
+    this.bonkUntilTime = 0;
+
     // Tap → hopp om vi står på marken.
     this.input.on('pointerdown', () => this.tryJump());
   }
@@ -97,12 +102,33 @@ export default class GameScene extends Phaser.Scene {
     obstacle.setData('type', type);
   }
 
+  handleBonk(obstacle) {
+    if (this.time.now < this.bonkUntilTime) return; // redan i bonk-läge
+    this.bonkUntilTime = this.time.now + 500;
+
+    // Förstör hindret så vi inte triggas igen.
+    obstacle.destroy();
+
+    // Kort sprite-tint + camera shake.
+    this.bike.setTint(0xff8888);
+    this.cameras.main.shake(150, 0.005);
+    this.time.delayedCall(300, () => this.bike.clearTint());
+  }
+
   update(time, delta) {
-    this.ground.tilePositionX += (this.scrollSpeed * delta) / 1000;
+    const inBonk = this.time.now < this.bonkUntilTime;
+    const effectiveSpeed = inBonk ? this.scrollSpeed * 0.4 : this.scrollSpeed;
+    this.ground.tilePositionX += (effectiveSpeed * delta) / 1000;
 
     const airborne = !(this.bike.body.blocked.down || this.bike.body.touching.down);
     const event = this.obstacleSpawner.tick(delta, { bikeAirborne: airborne });
     if (event) this.spawnObstacle(event.type);
+
+    // Sätt också hinderhastighet (ändras vid bonk).
+    this.obstacles.children.each((o) => {
+      if (o && o.body) o.setVelocityX(-effectiveSpeed);
+      return true;
+    });
 
     // Städa hinder som åkt ut till vänster.
     this.obstacles.children.each((obstacle) => {
