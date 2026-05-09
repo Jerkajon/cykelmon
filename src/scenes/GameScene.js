@@ -13,6 +13,8 @@ export default class GameScene extends Phaser.Scene {
   }
 
   preload() {
+    // Vi laddar 43 assets — höj från Phasers default 32 så alla startar parallellt.
+    this.load.maxParallelDownloads = 64;
     this.load.on('loaderror', (file) => {
       // Tyst fail för audio så v1 fungerar utan ljudfiler.
       // Pokémon-sprite-fel ska däremot synas.
@@ -30,6 +32,12 @@ export default class GameScene extends Phaser.Scene {
     this.load.image('ground-forest', 'grounds/forest.png');
     this.load.image('ground-beach', 'grounds/beach.png');
     this.load.image('ground-cave', 'grounds/cave.png');
+    // Hinder
+    this.load.image('obstacle-rock', 'obstacles/rock.png');
+    this.load.image('obstacle-log', 'obstacles/log.png');
+    this.load.image('obstacle-puddle', 'obstacles/puddle.png');
+    this.load.image('obstacle-shell', 'obstacles/shell.png');
+    this.load.image('obstacle-stalagmite', 'obstacles/stalagmite.png');
     // Ljud — load misslyckas tyst om filer saknas.
     this.load.audio('bgm-forest', 'audio/bgm-forest.wav');
     this.load.audio('bgm-beach', 'audio/bgm-beach.wav');
@@ -77,27 +85,6 @@ export default class GameScene extends Phaser.Scene {
       spawnWindowMs: 1500,
     });
     this.obstacles = this.physics.add.group({ allowGravity: false, immovable: true });
-
-    // Procedural placeholder-texturer för alla obstacle-typer
-    const obstacleColors = {
-      rock: 0x808080,
-      log: 0x8b5a2b,
-      puddle: 0x60a5fa,
-      shell: 0xfca5a5,
-      stalagmite: 0x6b7280,
-    };
-    for (const [type, color] of Object.entries(obstacleColors)) {
-      const k = `obstacle-${type}`;
-      if (!this.textures.exists(k)) {
-        const g = this.add.graphics();
-        g.fillStyle(color, 1);
-        g.fillRect(0, 5, 40, 35);
-        g.fillStyle(0x000000, 0.3);
-        g.fillRect(2, 35, 36, 5);
-        g.generateTexture(k, 40, 40);
-        g.destroy();
-      }
-    }
 
     const glitterKey = 'glitter';
     if (!this.textures.exists(glitterKey)) {
@@ -177,9 +164,10 @@ export default class GameScene extends Phaser.Scene {
     const w = this.scale.width;
     const groundTop = this.scale.height - 120;
     const key = `obstacle-${type}`;
-    const obstacle = this.obstacles.create(w + 50, groundTop - 20, key).setDepth(4);
+    const obstacle = this.obstacles.create(w + 50, groundTop, key).setDepth(4).setOrigin(0.5, 1);
     obstacle.setVelocityX(-this.scrollSpeed);
-    obstacle.body.setSize(30, 30);
+    obstacle.body.setSize(40, 40);
+    obstacle.body.setOffset((obstacle.width - 40) / 2, obstacle.height - 40);
     obstacle.setData('type', type);
   }
 
