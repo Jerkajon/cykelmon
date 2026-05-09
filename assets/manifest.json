@@ -1,0 +1,10 @@
+{
+  "name": "Pokémon Cykelspel",
+  "short_name": "Cykelspel",
+  "start_url": "/",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#87CEEB",
+  "theme_color": "#1d4ed8",
+  "icons": []
+}
