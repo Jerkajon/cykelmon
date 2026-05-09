@@ -107,7 +107,7 @@ export default class StickerBookScene extends Phaser.Scene {
         fontFamily: 'Arial', fontSize: '16px', color: '#7c2d12',
       }).setOrigin(0.5);
 
-      this.pageGroup.add([sprite, label]);
+      this.pageGroup.addMultiple([sprite, label]);
     });
 
     // Sid-indikator
