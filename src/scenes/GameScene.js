@@ -97,6 +97,15 @@ export default class GameScene extends Phaser.Scene {
       }
     }
 
+    const glitterKey = 'glitter';
+    if (!this.textures.exists(glitterKey)) {
+      const g = this.add.graphics();
+      g.fillStyle(0xffffff, 1);
+      g.fillCircle(4, 4, 4);
+      g.generateTexture(glitterKey, 8, 8);
+      g.destroy();
+    }
+
     // Biom-manager
     this.biomeManager = new BiomeManager({
       biomes: BIOMES,
@@ -197,7 +206,8 @@ export default class GameScene extends Phaser.Scene {
 
     this.stickerBook.markSeen({ id: pokemonId, shiny });
 
-    // Float-up + fade.
+    if (shiny) this.spawnGlitter(mon.x, mon.y);
+
     this.tweens.add({
       targets: mon,
       y: mon.y - 80,
@@ -205,6 +215,19 @@ export default class GameScene extends Phaser.Scene {
       duration: 600,
       onComplete: () => mon.destroy(),
     });
+  }
+
+  spawnGlitter(x, y) {
+    const particles = this.add.particles(x, y, 'glitter', {
+      lifespan: 800,
+      speed: { min: 100, max: 250 },
+      scale: { start: 1, end: 0 },
+      tint: [0xffd700, 0xffffaa, 0xffffff],
+      quantity: 30,
+      emitting: false,
+    });
+    particles.explode(30, x, y);
+    this.time.delayedCall(1000, () => particles.destroy());
   }
 
   handleBiomeSwitch(biome) {
