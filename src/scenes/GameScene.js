@@ -31,13 +31,13 @@ export default class GameScene extends Phaser.Scene {
     this.load.image('ground-beach', 'grounds/beach.png');
     this.load.image('ground-cave', 'grounds/cave.png');
     // Ljud — load misslyckas tyst om filer saknas.
-    this.load.audio('bgm-forest', 'audio/bgm-forest.mp3');
-    this.load.audio('bgm-beach', 'audio/bgm-beach.mp3');
-    this.load.audio('bgm-cave', 'audio/bgm-cave.mp3');
-    this.load.audio('sfx-jump', 'audio/sfx-jump.mp3');
-    this.load.audio('sfx-pickup', 'audio/sfx-pickup.mp3');
-    this.load.audio('sfx-bonk', 'audio/sfx-bonk.mp3');
-    this.load.audio('sfx-shiny', 'audio/sfx-shiny.mp3');
+    this.load.audio('bgm-forest', 'audio/bgm-forest.wav');
+    this.load.audio('bgm-beach', 'audio/bgm-beach.wav');
+    this.load.audio('bgm-cave', 'audio/bgm-cave.wav');
+    this.load.audio('sfx-jump', 'audio/sfx-jump.wav');
+    this.load.audio('sfx-pickup', 'audio/sfx-pickup.wav');
+    this.load.audio('sfx-bonk', 'audio/sfx-bonk.wav');
+    this.load.audio('sfx-shiny', 'audio/sfx-shiny.wav');
   }
 
   create() {
