@@ -268,10 +268,27 @@ export default class GameScene extends Phaser.Scene {
   }
 
   handleBiomeSwitch(biome) {
-    this.cameras.main.setBackgroundColor(biome.bgColor);
-    this.obstacleSpawner.setObstacleTypes(biome.obstacleTypes);
-    this.pokemonSpawner.setPokemonIds(biome.pokemonIds);
-    this.safeBgm(`bgm-${biome.id}`);
+    // Fade in en vit overlay, byt biom, fade ut.
+    const w = this.scale.width;
+    const h = this.scale.height;
+    const overlay = this.add.rectangle(w / 2, h / 2, w, h, 0xffffff, 0).setDepth(2000);
+    this.tweens.add({
+      targets: overlay,
+      alpha: 1,
+      duration: 250,
+      onComplete: () => {
+        this.cameras.main.setBackgroundColor(biome.bgColor);
+        this.obstacleSpawner.setObstacleTypes(biome.obstacleTypes);
+        this.pokemonSpawner.setPokemonIds(biome.pokemonIds);
+        this.safeBgm(`bgm-${biome.id}`);
+        this.tweens.add({
+          targets: overlay,
+          alpha: 0,
+          duration: 350,
+          onComplete: () => overlay.destroy(),
+        });
+      },
+    });
   }
 
   update(time, delta) {
