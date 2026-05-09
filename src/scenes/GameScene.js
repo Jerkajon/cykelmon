@@ -13,9 +13,23 @@ export default class GameScene extends Phaser.Scene {
   }
 
   preload() {
+    this.load.on('loaderror', (file) => {
+      // Tyst fail för audio så v1 fungerar utan ljudfiler.
+      // Pokémon-sprite-fel ska däremot synas.
+      if (file.type === 'audio') return;
+      console.warn('Asset load error:', file.key, file.src);
+    });
     for (const p of POKEMON) {
       this.load.image(`pokemon-${p.id}`, `pokemon/${p.id}.png`);
     }
+    // Ljud — load misslyckas tyst om filer saknas.
+    this.load.audio('bgm-forest', 'audio/bgm-forest.mp3');
+    this.load.audio('bgm-beach', 'audio/bgm-beach.mp3');
+    this.load.audio('bgm-cave', 'audio/bgm-cave.mp3');
+    this.load.audio('sfx-jump', 'audio/sfx-jump.mp3');
+    this.load.audio('sfx-pickup', 'audio/sfx-pickup.mp3');
+    this.load.audio('sfx-bonk', 'audio/sfx-bonk.mp3');
+    this.load.audio('sfx-shiny', 'audio/sfx-shiny.mp3');
   }
 
   create() {
@@ -153,13 +167,20 @@ export default class GameScene extends Phaser.Scene {
     }).setInteractive({ useHandCursor: true }).setScrollFactor(0).setDepth(1000);
     homeBtn.on('pointerdown', () => this.scene.start('HomeScene'));
 
+    this.events.once('shutdown', () => {
+      if (this.bgm) { this.bgm.stop(); this.bgm.destroy(); }
+    });
+
     // Tap → hopp om vi står på marken.
     this.input.on('pointerdown', () => this.tryJump());
+
+    this.safeBgm(`bgm-${startBiome.id}`);
   }
 
   tryJump() {
     if (this.bike.body.blocked.down || this.bike.body.touching.down) {
       this.bike.setVelocityY(-700);
+      this.safePlay('sfx-jump', { volume: 0.6 });
     }
   }
 
@@ -182,6 +203,7 @@ export default class GameScene extends Phaser.Scene {
 
     // Kort sprite-tint + camera shake.
     this.bike.setTint(0xff8888);
+    this.safePlay('sfx-bonk', { volume: 0.7 });
     this.cameras.main.shake(150, 0.005);
     this.time.delayedCall(300, () => this.bike.clearTint());
   }
@@ -205,6 +227,7 @@ export default class GameScene extends Phaser.Scene {
     const shiny = mon.getData('shiny');
 
     this.stickerBook.markSeen({ id: pokemonId, shiny });
+    this.safePlay(shiny ? 'sfx-shiny' : 'sfx-pickup', { volume: 0.7 });
 
     if (shiny) this.spawnGlitter(mon.x, mon.y);
 
@@ -230,10 +253,25 @@ export default class GameScene extends Phaser.Scene {
     this.time.delayedCall(1000, () => particles.destroy());
   }
 
+  safePlay(key, config = {}) {
+    if (this.cache.audio.exists(key)) {
+      this.sound.play(key, config);
+    }
+  }
+
+  safeBgm(key) {
+    if (this.bgm) { this.bgm.stop(); this.bgm.destroy(); this.bgm = null; }
+    if (this.cache.audio.exists(key)) {
+      this.bgm = this.sound.add(key, { loop: true, volume: 0.4 });
+      this.bgm.play();
+    }
+  }
+
   handleBiomeSwitch(biome) {
     this.cameras.main.setBackgroundColor(biome.bgColor);
     this.obstacleSpawner.setObstacleTypes(biome.obstacleTypes);
     this.pokemonSpawner.setPokemonIds(biome.pokemonIds);
+    this.safeBgm(`bgm-${biome.id}`);
   }
 
   update(time, delta) {
