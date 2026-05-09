@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import HomeScene from './scenes/HomeScene.js';
 import GameScene from './scenes/GameScene.js';
+import StickerBookScene from './scenes/StickerBookScene.js';
 
 const config = {
   type: Phaser.AUTO,
@@ -19,7 +20,7 @@ const config = {
       debug: false,
     },
   },
-  scene: [HomeScene, GameScene],
+  scene: [HomeScene, GameScene, StickerBookScene],
 };
 
 new Phaser.Game(config);
