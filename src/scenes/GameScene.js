@@ -9,11 +9,9 @@ export default class GameScene extends Phaser.Scene {
     const w = this.scale.width;
     const h = this.scale.height;
 
-    // Mark: en grön remsa längst ner. TileSprite så vi kan skrolla texturen.
     const groundHeight = 80;
     const groundY = h - groundHeight / 2;
 
-    // Skapa procedural mark-textur (grön med mörkare prickar).
     const groundTextureKey = 'ground-texture';
     if (!this.textures.exists(groundTextureKey)) {
       const g = this.add.graphics();
@@ -29,23 +27,42 @@ export default class GameScene extends Phaser.Scene {
 
     this.ground = this.add.tileSprite(w / 2, groundY, w, groundHeight, groundTextureKey);
 
-    // Cyklist: placeholder-graphics. Spara som container så vi kan animera senare.
-    const bikeX = w * 0.25;
-    const bikeY = groundY - groundHeight / 2 - 30;
-    this.bike = this.makeBikePlaceholder(bikeX, bikeY);
+    // Osynlig physics-mark för kollision.
+    this.groundBody = this.physics.add.staticImage(w / 2, groundY).setSize(w, groundHeight).setVisible(false);
+    this.groundBody.refreshBody();
 
-    // Hastighet: pixlar per sekund som marken skrollar.
+    // Cykel-textur (placeholder, genererad från graphics).
+    const bikeKey = 'bike-placeholder';
+    if (!this.textures.exists(bikeKey)) {
+      const g = this.add.graphics();
+      g.fillStyle(0x2244cc, 1);
+      g.fillRect(5, 0, 50, 20);
+      g.fillStyle(0x222222, 1);
+      g.fillCircle(15, 30, 12);
+      g.fillCircle(45, 30, 12);
+      g.fillStyle(0xffd1a4, 1);
+      g.fillCircle(30, -8, 10);
+      g.generateTexture(bikeKey, 60, 50);
+      g.destroy();
+    }
+
+    const bikeX = w * 0.25;
+    const bikeY = groundY - groundHeight / 2 - 25;
+    this.bike = this.physics.add.sprite(bikeX, bikeY, bikeKey);
+    this.bike.setCollideWorldBounds(true);
+    this.bike.body.setSize(40, 40);
+    this.physics.add.collider(this.bike, this.groundBody);
+
     this.scrollSpeed = 200;
+
+    // Tap → hopp om vi står på marken.
+    this.input.on('pointerdown', () => this.tryJump());
   }
 
-  makeBikePlaceholder(x, y) {
-    const container = this.add.container(x, y);
-    const body = this.add.rectangle(0, -10, 50, 20, 0x2244cc);
-    const wheelL = this.add.circle(-15, 12, 12, 0x222222);
-    const wheelR = this.add.circle(15, 12, 12, 0x222222);
-    const head = this.add.circle(0, -28, 10, 0xffd1a4);
-    container.add([body, wheelL, wheelR, head]);
-    return container;
+  tryJump() {
+    if (this.bike.body.blocked.down || this.bike.body.touching.down) {
+      this.bike.setVelocityY(-700);
+    }
   }
 
   update(time, delta) {
