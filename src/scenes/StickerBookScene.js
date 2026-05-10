@@ -1,8 +1,9 @@
 import Phaser from 'phaser';
 import { POKEMON, pokemonByBiome } from '../data/pokemon.js';
-import { BIOMES } from '../data/biomes.js';
+import { BIOMES, biomeById } from '../data/biomes.js';
+import { LEVELS } from '../data/levels.js';
 import { StickerBook } from '../systems/StickerBook.js';
-import { createStorage } from '../utils/storage.js';
+import { createStorage, getAllLevelStars } from '../utils/storage.js';
 
 const PER_PAGE = 30;
 
@@ -51,6 +52,7 @@ export default class StickerBookScene extends Phaser.Scene {
         }
       }
     }
+    this.pages.push({ title: 'Nivåer', levelPage: true });
     this.pages.push({ title: 'Glittriga!', pokemons: POKEMON, shinyPage: true });
 
     this.pageIdx = 0;
@@ -109,6 +111,12 @@ export default class StickerBookScene extends Phaser.Scene {
       strokeThickness: titleStroke ? 6 : 0,
     }).setOrigin(0.5);
     this.pageGroup.add(title);
+
+    if (page.levelPage) {
+      this.renderLevelPage();
+      this.addPageIndicator();
+      return;
+    }
 
     // Shiny-sida visar bara fångade shinies (löser dubblet-känslan).
     const visible = page.shinyPage
@@ -175,6 +183,73 @@ export default class StickerBookScene extends Phaser.Scene {
       }).setOrigin(0.5);
       this.pageGroup.add(badge);
     }
+  }
+
+  renderLevelPage() {
+    const w = this.scale.width;
+    const h = this.scale.height;
+    const levelStars = getAllLevelStars(createStorage());
+
+    // 12 nivåer i 4 cols × 3 rows. Cards färgas efter biome.
+    const cols = 4;
+    const rows = 3;
+    const padX = w * 0.06;
+    const padTop = 130;
+    const padBottom = 70;
+    const cellW = (w - padX * 2) / cols;
+    const cellH = (h - padTop - padBottom) / rows;
+    const cardW = cellW * 0.88;
+    const cardH = cellH * 0.88;
+
+    LEVELS.forEach((level, i) => {
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const cx = padX + cellW * col + cellW / 2;
+      const cy = padTop + cellH * row + cellH / 2;
+
+      const biome = biomeById(level.worldId);
+      const data = levelStars[level.id] || { stars: 0, completed: false };
+      const isCompleted = data.completed;
+
+      const card = this.add.graphics();
+      card.fillStyle(biome.bgColor, isCompleted ? 0.95 : 0.5);
+      card.fillRoundedRect(cx - cardW / 2, cy - cardH / 2, cardW, cardH, 10);
+      card.lineStyle(3, 0x7c2d12, 1);
+      card.strokeRoundedRect(cx - cardW / 2, cy - cardH / 2, cardW, cardH, 10);
+      this.pageGroup.add(card);
+
+      const idTxt = this.add.text(cx, cy - cardH / 2 + 18, level.id, {
+        fontFamily: 'Arial Black', fontSize: '22px',
+        color: '#ffffff', stroke: '#1f2937', strokeThickness: 4,
+      }).setOrigin(0.5);
+      this.pageGroup.add(idTxt);
+
+      const stars = data.stars || 0;
+      const starTxt = this.add.text(cx, cy - cardH / 2 + 44, '★'.repeat(stars) + '☆'.repeat(3 - stars), {
+        fontFamily: 'Arial Black', fontSize: '20px',
+        color: '#fde047', stroke: '#7c2d12', strokeThickness: 3,
+      }).setOrigin(0.5);
+      this.pageGroup.add(starTxt);
+
+      // Boss-pokémon-sprite (faded om ej fångad)
+      const bossSeen = this.book.isSeen(level.bossPokemonId);
+      const bossY = cy + cardH * 0.10;
+      const sprite = this.add.image(cx, bossY, `pokemon-${level.bossPokemonId}`).setScale(1.0);
+      if (!bossSeen) {
+        sprite.setTint(0x000000);
+        sprite.setAlpha(0.3);
+      }
+      this.pageGroup.add(sprite);
+
+      // Pokémon-namn under spriten (??? om ej fångad — matchar resten av Stickerbook)
+      const bossData = POKEMON.find((p) => p.id === level.bossPokemonId);
+      const nameY = cy + cardH / 2 - 14;
+      const nameTxt = this.add.text(cx, nameY, bossSeen ? bossData?.name || '???' : '???', {
+        fontFamily: 'Arial Black', fontSize: '12px',
+        color: '#ffffff', stroke: '#1f2937', strokeThickness: 3,
+      }).setOrigin(0.5);
+      this.pageGroup.add(nameTxt);
+    });
   }
 
   renderShinyCard(p, x, y, cellW, cellH) {

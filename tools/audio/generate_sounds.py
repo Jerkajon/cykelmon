@@ -146,6 +146,76 @@ def sfx_shiny():
     return out
 
 
+def sfx_star():
+    """Snabb 'ding' när en stjärna delas ut i ResultScene — högre och kortare än pickup."""
+    notes = [(784, 0.0), (1047, 0.05)]  # G5 → C6, snabb
+    total = 0.30
+    n = int(SR * total)
+    out = np.zeros(n)
+    for hz, start in notes:
+        s = int(start * SR)
+        d = total - start
+        wave_data = sine(hz, d) * 0.6 + sine(hz * 2, d) * 0.25
+        env = adsr(np.ones_like(wave_data), attack=0.003, decay=0.03, sustain=0.45, release=0.18)
+        m = min(len(wave_data), len(env), n - s)
+        out[s:s + m] += (wave_data[:m] * env[:m])
+    return out
+
+
+def sfx_boss_pickup():
+    """Boss-fångst — dramatisk arpeggio + bas-impact. Kombinerar pickup-stil med tyngd."""
+    # Arpeggio C5 E5 G5 C6 E6 (5 toner stigande för dramatik)
+    notes = [(523, 0.00), (659, 0.06), (784, 0.12), (1047, 0.18), (1319, 0.24)]
+    total = 0.70
+    n = int(SR * total)
+    out = np.zeros(n)
+    for hz, start in notes:
+        s = int(start * SR)
+        d = total - start
+        wave_data = sine(hz, d) * 0.45 + triangle(hz * 2, d) * 0.20
+        env = adsr(np.ones_like(wave_data), attack=0.004, decay=0.04, sustain=0.5, release=0.25)
+        m = min(len(wave_data), len(env), n - s)
+        out[s:s + m] += (wave_data[:m] * env[:m])
+    # Bas-impact i början för "tyngd" (boss = tungt)
+    impact = sine(110, 0.15) * 0.5 + sine(55, 0.15) * 0.3
+    impact = adsr(impact, attack=0.002, decay=0.03, sustain=0.4, release=0.10)
+    out[:len(impact)] += impact
+    return out
+
+
+def sfx_level_clear():
+    """Nivå-klar fanfar — triumferande C-major chord-progression med längd för 'firande'."""
+    # Tre ackord: C-G-C med dur-stämmor
+    chord_specs = [
+        (0.00, 0.30, [261.63, 329.63, 392.00]),  # C-major (C4-E4-G4)
+        (0.30, 0.30, [392.00, 493.88, 587.33]),  # G-major (G4-B4-D5)
+        (0.60, 0.55, [523.25, 659.25, 783.99, 1046.50]),  # C-major hög oktav (C5-E5-G5-C6)
+    ]
+    total = 1.20
+    n = int(SR * total)
+    out = np.zeros(n)
+    for start, dur, freqs in chord_specs:
+        s = int(start * SR)
+        for freq in freqs:
+            wave_data = triangle(freq, dur) * 0.30 + sine(freq * 2, dur) * 0.10
+            env = adsr(np.ones_like(wave_data), attack=0.005, decay=0.04, sustain=0.55, release=0.18)
+            samples = wave_data * env
+            end = min(s + len(samples), n)
+            out[s:end] += samples[:end - s]
+    # Liten flourish på slutet — uppåtgående arpeggio
+    flourish_notes = [(1318.51, 0.95), (1567.98, 1.00), (2093.00, 1.05)]  # E6 G6 C7
+    for hz, start in flourish_notes:
+        s = int(start * SR)
+        d = total - start
+        if d <= 0:
+            continue
+        wave_data = sine(hz, d) * 0.25
+        env = adsr(np.ones_like(wave_data), attack=0.003, decay=0.02, sustain=0.4, release=0.12)
+        end = min(s + len(wave_data), n)
+        out[s:end] += (wave_data * env)[:end - s]
+    return out
+
+
 # ─── BGM-loopar ─────────────────────────────────────────────────────────
 
 def note(freq, dur, wave_fn=triangle, harmonic_mix=(1.0, 0.0)):
@@ -269,6 +339,9 @@ def main():
         "sfx-pickup.wav": sfx_pickup(),
         "sfx-bonk.wav": sfx_bonk(),
         "sfx-shiny.wav": sfx_shiny(),
+        "sfx-star.wav": sfx_star(),
+        "sfx-boss-pickup.wav": sfx_boss_pickup(),
+        "sfx-level-clear.wav": sfx_level_clear(),
     }
     for name, samples in sfx.items():
         write_wav(args.out / name, samples, gain=0.55)

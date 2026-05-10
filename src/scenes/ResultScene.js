@@ -19,6 +19,9 @@ export default class ResultScene extends Phaser.Scene {
     // Bakgrund — soft fade
     this.add.rectangle(0, 0, w, h, 0x000000, 0.8).setOrigin(0, 0);
 
+    // Nivå-klar fanfar (audio cache fylld av GameScene)
+    this.safePlay('sfx-level-clear', { volume: 0.6 });
+
     // "NIVÅ KLAR!"
     this.add.text(w / 2, 100, `${this.levelId} KLAR!`, {
       fontSize: '64px',
@@ -28,7 +31,7 @@ export default class ResultScene extends Phaser.Scene {
       strokeThickness: 6,
     }).setOrigin(0.5);
 
-    // 3 stjärn-slots
+    // 3 stjärn-slots — spela "ding" sekventiellt för varje fylld stjärna
     const starY = 250;
     const starSpacing = 120;
     for (let i = 0; i < 3; i++) {
@@ -39,6 +42,9 @@ export default class ResultScene extends Phaser.Scene {
         color: filled ? '#ffd700' : '#666',
         fontFamily: 'Arial Black',
       }).setOrigin(0.5);
+      if (filled) {
+        this.time.delayedCall(600 + i * 350, () => this.safePlay('sfx-star', { volume: 0.7 }));
+      }
     }
 
     // Pokémon-räknare (boss + random)
@@ -74,5 +80,10 @@ export default class ResultScene extends Phaser.Scene {
     map.on('pointerdown', () => {
       this.scene.start('WorldMapScene');
     });
+  }
+
+  safePlay(key, opts) {
+    if (!this.cache.audio.exists(key)) return;
+    try { this.sound.play(key, opts); } catch { /* tyst fail */ }
   }
 }
