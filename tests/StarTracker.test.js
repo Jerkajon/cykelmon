@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { StarTracker } from './StarTracker.js';
+import { StarTracker } from '../src/systems/StarTracker.js';
 
 describe('StarTracker', () => {
   it('startar med 0 stjärnor', () => {
