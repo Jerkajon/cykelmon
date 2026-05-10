@@ -6,9 +6,10 @@ import { createStorage } from '../utils/storage.js';
 import { POKEMON } from '../data/pokemon.js';
 import { BIOMES } from '../data/biomes.js';
 import { BiomeManager } from '../systems/BiomeManager.js';
-import { activeCycle } from '../data/cycles.js';
+import { CYCLES, activeCycle, unlockedCycles } from '../data/cycles.js';
 
 const LIFETIME_KEY = 'pokemoncykelspel.lifetimeCount';
+const SELECTED_KEY = 'pokemoncykelspel.selectedCycle';
 
 export default class GameScene extends Phaser.Scene {
   constructor() {
@@ -80,7 +81,9 @@ export default class GameScene extends Phaser.Scene {
     const bikeX = w * 0.25;
     const bikeY = groundY - groundHeight / 2 - 48;
     const lifetimeCount = createStorage().get(LIFETIME_KEY) || 0;
-    const cycle = activeCycle(lifetimeCount);
+    const unlocked = unlockedCycles(lifetimeCount);
+    const savedId = createStorage().get(SELECTED_KEY);
+    const cycle = unlocked.find((c) => c.id === savedId) || activeCycle(lifetimeCount);
     const bikeKey = this.textures.exists(`bike-${cycle.id}`) ? `bike-${cycle.id}` : 'bike';
     this.bike = this.physics.add.sprite(bikeX, bikeY, bikeKey).setDepth(5);
     this.bike.setCollideWorldBounds(true);
@@ -185,15 +188,32 @@ export default class GameScene extends Phaser.Scene {
     this.beatRecord = false;
     this.combo = 0;
 
-    this.scoreText = this.add.text(w / 2, 24, '0', {
-      fontFamily: 'Arial Black', fontSize: '44px',
-      color: '#ffffff', stroke: '#1d4ed8', strokeThickness: 6,
-    }).setOrigin(0.5, 0).setDepth(1500).setScrollFactor(0);
+    // Pokeball-textur (delas mellan scenes)
+    if (!this.textures.exists('pokeball-icon')) this.makePokeballTexture();
 
-    this.highScoreText = this.add.text(w - 24, 28, `🏆 ${this.highScore}`, {
-      fontFamily: 'Arial Black', fontSize: '24px',
-      color: '#fde047', stroke: '#000000', strokeThickness: 4,
-    }).setOrigin(1, 0).setDepth(1500).setScrollFactor(0);
+    // Score-pill (live antal fångade)
+    const scorePill = this.add.graphics().setDepth(1499).setScrollFactor(0);
+    scorePill.fillStyle(0x1d4ed8, 0.85);
+    scorePill.fillRoundedRect(w / 2 - 100, 14, 200, 60, 30);
+    scorePill.lineStyle(4, 0xfde047, 1);
+    scorePill.strokeRoundedRect(w / 2 - 100, 14, 200, 60, 30);
+    this.add.image(w / 2 - 75, 44, 'pokeball-icon').setScale(1.0).setDepth(1500).setScrollFactor(0);
+    this.scoreText = this.add.text(w / 2 + 15, 44, '0', {
+      fontFamily: 'Arial Black', fontSize: '36px',
+      color: '#fde047', stroke: '#1e3a8a', strokeThickness: 5,
+    }).setOrigin(0.5).setDepth(1500).setScrollFactor(0);
+
+    // Highscore-pill
+    const hsPill = this.add.graphics().setDepth(1499).setScrollFactor(0);
+    hsPill.fillStyle(0x1d4ed8, 0.7);
+    hsPill.fillRoundedRect(w - 170, 18, 156, 42, 21);
+    hsPill.lineStyle(3, 0xfde047, 1);
+    hsPill.strokeRoundedRect(w - 170, 18, 156, 42, 21);
+    this.add.image(w - 150, 39, 'pokeball-icon').setScale(0.65).setDepth(1500).setScrollFactor(0);
+    this.highScoreText = this.add.text(w - 130, 39, `${this.highScore}`, {
+      fontFamily: 'Arial Black', fontSize: '22px',
+      color: '#fde047', stroke: '#1e3a8a', strokeThickness: 4,
+    }).setOrigin(0, 0.5).setDepth(1500).setScrollFactor(0);
 
     this.buffText = this.add.text(20, 70, '', {
       fontFamily: 'Arial Black', fontSize: '24px',
@@ -294,6 +314,29 @@ export default class GameScene extends Phaser.Scene {
     return ring;
   }
 
+  makePokeballTexture() {
+    const g = this.add.graphics();
+    g.fillStyle(0xee1515, 1);
+    g.slice(20, 20, 18, Math.PI, 0, true);
+    g.fillPath();
+    g.fillStyle(0xffffff, 1);
+    g.slice(20, 20, 18, 0, Math.PI, true);
+    g.fillPath();
+    g.lineStyle(2.5, 0x000000, 1);
+    g.strokeCircle(20, 20, 18);
+    g.lineStyle(3, 0x000000, 1);
+    g.beginPath();
+    g.moveTo(2, 20);
+    g.lineTo(38, 20);
+    g.strokePath();
+    g.fillStyle(0xffffff, 1);
+    g.fillCircle(20, 20, 6);
+    g.lineStyle(2.5, 0x000000, 1);
+    g.strokeCircle(20, 20, 6);
+    g.generateTexture('pokeball-icon', 40, 40);
+    g.destroy();
+  }
+
   bakeOutline(textureKey, thickness, color) {
     if (!this.textures.exists(textureKey)) return;
     const tex = this.textures.get(textureKey);
@@ -352,7 +395,7 @@ export default class GameScene extends Phaser.Scene {
     }
     if (this.score > this.highScore) {
       this.highScore = this.score;
-      this.highScoreText.setText(`🏆 ${this.highScore}`);
+      this.highScoreText.setText(`${this.highScore}`);
       createStorage().set('pokemoncykelspel.highscore', this.highScore);
       if (!this.beatRecord && this.initialHighScore > 0) {
         this.beatRecord = true;

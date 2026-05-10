@@ -10,6 +10,8 @@ const POKEMON_IDS = [
   7, 8, 9, 54, 55, 60, 61, 72, 73, 79, 80, 86, 87, 90, 91, 98, 99, 116, 117, 118, 119, 120, 121, 129,
   // Grotta
   19, 20, 27, 28, 41, 42, 50, 51, 56, 57, 66, 67, 74, 75, 88, 89, 92, 93, 95, 100, 104, 105, 109, 110,
+  // Hav
+  130, 131, 134, 138, 139, 140, 141, 147,
 ];
 
 const SPRITE_URL = (id) => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;

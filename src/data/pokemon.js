@@ -77,6 +77,16 @@ export const POKEMON = [
   { id: 105, name: 'Marowak',     biome: 'cave' },
   { id: 109, name: 'Koffing',     biome: 'cave' },
   { id: 110, name: 'Weezing',     biome: 'cave' },
+
+  // === HAV ===
+  { id: 130, name: 'Gyarados',    biome: 'ocean' },
+  { id: 131, name: 'Lapras',      biome: 'ocean' },
+  { id: 134, name: 'Vaporeon',    biome: 'ocean' },
+  { id: 138, name: 'Omanyte',     biome: 'ocean' },
+  { id: 139, name: 'Omastar',     biome: 'ocean' },
+  { id: 140, name: 'Kabuto',      biome: 'ocean' },
+  { id: 141, name: 'Kabutops',    biome: 'ocean' },
+  { id: 147, name: 'Dratini',     biome: 'ocean' },
 ];
 
 export function pokemonByBiome(biomeId) {

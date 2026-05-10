@@ -27,8 +27,7 @@ export const BIOMES = [
     name: 'Hav',
     bgColor: 0x0c4a6e,
     obstacleTypes: ['shell', 'puddle'],
-    // Avancerade vatten-pokémon (evolutions + djuphavs-typer).
-    pokemonIds: [9, 73, 80, 87, 91, 99, 117, 121],
+    get pokemonIds() { return pokemonByBiome('ocean').map((p) => p.id); },
   },
 ];
 
