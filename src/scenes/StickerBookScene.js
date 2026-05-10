@@ -4,6 +4,8 @@ import { BIOMES } from '../data/biomes.js';
 import { StickerBook } from '../systems/StickerBook.js';
 import { createStorage } from '../utils/storage.js';
 
+const PER_PAGE = 30;
+
 export default class StickerBookScene extends Phaser.Scene {
   constructor() {
     super({ key: 'StickerBookScene' });
@@ -31,12 +33,24 @@ export default class StickerBookScene extends Phaser.Scene {
       g.destroy();
     }
 
-    // Sidor: en per biom + glittriga
-    this.pages = BIOMES.map((b) => ({
-      title: b.name,
-      pokemons: pokemonByBiome(b.id),
-      shinyPage: false,
-    }));
+    // Sidor: paginera biom-sidor om de har > PER_PAGE pokémon
+    this.pages = [];
+    for (const b of BIOMES) {
+      const pokemons = pokemonByBiome(b.id);
+      if (pokemons.length === 0) continue;
+      if (pokemons.length <= PER_PAGE) {
+        this.pages.push({ title: b.name, pokemons, shinyPage: false });
+      } else {
+        const numPages = Math.ceil(pokemons.length / PER_PAGE);
+        for (let i = 0; i < numPages; i++) {
+          this.pages.push({
+            title: `${b.name} ${i + 1}/${numPages}`,
+            pokemons: pokemons.slice(i * PER_PAGE, (i + 1) * PER_PAGE),
+            shinyPage: false,
+          });
+        }
+      }
+    }
     this.pages.push({ title: 'Glittriga!', pokemons: POKEMON, shinyPage: true });
 
     this.pageIdx = 0;
@@ -112,14 +126,14 @@ export default class StickerBookScene extends Phaser.Scene {
       return;
     }
 
-    const cols = page.shinyPage ? (visible.length <= 8 ? 4 : 6) : (visible.length > 36 ? 8 : 6);
+    const cols = page.shinyPage ? (visible.length <= 8 ? 4 : 6) : 6;
     const rows = Math.max(1, Math.ceil(visible.length / cols));
     const cellW = w * 0.78 / cols;
     const cellH = (h - 200) / rows;
     const startX = w * 0.11 + cellW / 2;
     const startY = 130 + cellH / 2;
-    // Skala spriten dynamiskt så den får plats även när det är 60+ pokémon
-    const spriteScale = Math.max(0.6, Math.min(2, (cellH - 30) / 50));
+    // Skala sprite så det finns plats för label under (sprite-bot + padding + text-höjd < cell-bot)
+    const spriteScale = Math.max(0.6, Math.min(1.4, (cellH - 50) / 60));
 
     visible.forEach((p, i) => {
       const col = i % cols;
@@ -140,18 +154,22 @@ export default class StickerBookScene extends Phaser.Scene {
   renderRegularSticker(p, x, y, cellH, spriteScale = 2) {
     const seen = this.book.isSeen(p.id);
     const count = this.book.getCount(p.id);
-    const sprite = this.add.image(x, y, `pokemon-${p.id}`).setScale(spriteScale);
+    // Sprite centrerad lite UPPÅT i cellen så det finns plats för label under
+    const spriteY = y - cellH * 0.08;
+    const sprite = this.add.image(x, spriteY, `pokemon-${p.id}`).setScale(spriteScale);
     if (!seen) {
       sprite.setTint(0x000000);
       sprite.setAlpha(0.25);
     }
-    const labelSize = Math.max(10, Math.floor(spriteScale * 8));
-    const label = this.add.text(x, y + cellH * 0.38, seen ? p.name : '???', {
-      fontFamily: 'Arial', fontSize: `${labelSize}px`, color: '#7c2d12',
-    }).setOrigin(0.5);
+    // Sprite-bottom + padding → label hamnar alltid under bilden
+    const labelY = spriteY + 48 * spriteScale + 6;
+    const labelSize = Math.max(11, Math.floor(spriteScale * 9));
+    const label = this.add.text(x, labelY, seen ? p.name : '???', {
+      fontFamily: 'Arial Black', fontSize: `${labelSize}px`, color: '#7c2d12',
+    }).setOrigin(0.5, 0);
     this.pageGroup.addMultiple([sprite, label]);
     if (count > 1) {
-      const badge = this.add.text(x + 24 * spriteScale / 2, y - 24 * spriteScale / 2, `×${count}`, {
+      const badge = this.add.text(x + 24 * spriteScale / 2, spriteY - 24 * spriteScale / 2, `×${count}`, {
         fontFamily: 'Arial Black', fontSize: '13px',
         color: '#ffffff', stroke: '#7c2d12', strokeThickness: 3,
       }).setOrigin(0.5);

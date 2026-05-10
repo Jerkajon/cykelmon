@@ -66,7 +66,7 @@ export default class GameScene extends Phaser.Scene {
     const w = this.scale.width;
     const h = this.scale.height;
 
-    const groundHeight = 120;
+    const groundHeight = 150;
     const groundY = h - groundHeight / 2;
 
     // Bakgrund (texture sätts av handleBiomeSwitch / startBiome nedan)
@@ -92,6 +92,9 @@ export default class GameScene extends Phaser.Scene {
     const bikeKey = this.textures.exists(`bike-${cycle.id}`) ? `bike-${cycle.id}` : 'bike';
     this.bike = this.physics.add.sprite(bikeX, bikeY, bikeKey).setDepth(5);
     this.bike.setCollideWorldBounds(true);
+    // Custom-cyklar är 128x128 (DrawThings-genererade), standard bike är 96x96.
+    // Skala ner så alla blir ~96 visuellt och cyklist-bot landar på mark-top.
+    if (bikeKey !== 'bike') this.bike.setScale(0.75);
     this.bike.body.setSize(60, 60);
     if (bikeKey === 'bike' && cycle.tint !== 0xffffff) this.bike.setTint(cycle.tint);
     if (cycle.glow) this.bike.postFX.addGlow(cycle.tint, 4, 0, false, 0.1, 12);
@@ -239,7 +242,7 @@ export default class GameScene extends Phaser.Scene {
 
   spawnObstacle(type) {
     const w = this.scale.width;
-    const groundTop = this.scale.height - 120;
+    const groundTop = this.scale.height - 150;
     const key = `obstacle-${type}`;
     const obstacle = this.obstacles.create(w + 50, groundTop, key).setDepth(4).setOrigin(0.5, 1);
     obstacle.setVelocityX(-this.scrollSpeed);
@@ -285,7 +288,7 @@ export default class GameScene extends Phaser.Scene {
 
   spawnPokemon({ pokemonId, shiny }) {
     const w = this.scale.width;
-    const groundTop = this.scale.height - 120;
+    const groundTop = this.scale.height - 150;
     const key = `pokemon-${pokemonId}`;
     const mon = this.pokemons.create(w + 50, groundTop - 30, key).setDepth(4).setScale(1.35);
     mon.setVelocityX(-this.scrollSpeed);
@@ -472,7 +475,7 @@ export default class GameScene extends Phaser.Scene {
     const type = types[Math.floor(Math.random() * types.length)];
     const spriteKey = type === 'magnet' ? 'pu-magnet' : type === 'shield' ? 'pu-shield' : 'pu-star';
     const w = this.scale.width;
-    const groundTop = this.scale.height - 120;
+    const groundTop = this.scale.height - 150;
     const y = groundTop - 110;
 
     const pu = this.add.image(w + 50, y, spriteKey).setOrigin(0.5).setDepth(4).setScale(0.55);
