@@ -52,6 +52,10 @@ export default class GameScene extends Phaser.Scene {
     this.load.audio('bgm-beach', 'audio/bgm-beach.wav');
     this.load.audio('bgm-cave', 'audio/bgm-cave.wav');
     this.load.audio('bgm-ocean', 'audio/bgm-ocean.wav');
+    // Power-up-ikoner (pixelart genererade via DrawThings).
+    this.load.image('pu-magnet', 'powerups/magnet.png');
+    this.load.image('pu-shield', 'powerups/shield.png');
+    this.load.image('pu-star', 'powerups/star.png');
     this.load.audio('sfx-jump', 'audio/sfx-jump.wav');
     this.load.audio('sfx-pickup', 'audio/sfx-pickup.wav');
     this.load.audio('sfx-bonk', 'audio/sfx-bonk.wav');
@@ -216,10 +220,12 @@ export default class GameScene extends Phaser.Scene {
       color: '#fde047', stroke: '#1e3a8a', strokeThickness: 4,
     }).setOrigin(0, 0.5).setDepth(1500).setScrollFactor(0);
 
-    this.buffText = this.add.text(20, 70, '', {
-      fontFamily: 'Arial Black', fontSize: '24px',
-      color: '#fde047', stroke: '#000000', strokeThickness: 4,
-    }).setDepth(1500).setScrollFactor(0);
+    this.buffIcon = this.add.image(40, 110, 'pu-magnet')
+      .setOrigin(0.5).setScale(0.4).setDepth(1500).setScrollFactor(0).setVisible(false);
+    this.buffText = this.add.text(80, 110, '', {
+      fontFamily: 'Arial Black', fontSize: '26px',
+      color: '#fde047', stroke: '#1d4ed8', strokeThickness: 4,
+    }).setOrigin(0, 0.5).setDepth(1500).setScrollFactor(0);
 
     this.safeBgm(`bgm-${startBiome.id}`);
   }
@@ -288,19 +294,43 @@ export default class GameScene extends Phaser.Scene {
     mon.setData('shiny', shiny);
     if (shiny) {
       mon.setTint(0xffffaa);
-      mon.postFX.addShine(0.5, 1, 6, false);
+      // Kraftig holo-shine + pulserande regnbågs-glow
+      mon.postFX.addShine(0.8, 1.5, 8, false);
+      const glow = mon.postFX.addGlow(0xff66ff, 5, 0, false, 0.1, 14);
+      this.tweens.add({
+        targets: glow,
+        outerStrength: 10,
+        duration: 500,
+        yoyo: true,
+        repeat: -1,
+      });
+      // Tjockare och tätare glitter-trail med 5 färger
       const trail = this.add.particles(0, 0, 'glitter', {
         follow: mon,
-        lifespan: 700,
-        speed: { min: 30, max: 80 },
-        scale: { start: 0.7, end: 0 },
-        tint: [0xffd700, 0xffffaa, 0xffffff, 0xff99ff],
-        quantity: 1,
-        frequency: 70,
+        lifespan: 900,
+        speed: { min: 50, max: 120 },
+        scale: { start: 1.0, end: 0 },
+        tint: [0xffd700, 0xffffaa, 0xffffff, 0xff99ff, 0x99ffff],
+        quantity: 2,
+        frequency: 40,
         blendMode: 'ADD',
       });
       trail.setDepth(4);
       mon.setData('trail', trail);
+      // Sparkle-aura: stora burst-partiklar runt spriten
+      const aura = this.add.particles(0, 0, 'glitter', {
+        follow: mon,
+        lifespan: 1200,
+        speed: { min: 10, max: 40 },
+        scale: { start: 1.4, end: 0 },
+        tint: [0xfff7c2, 0xffe066],
+        quantity: 1,
+        frequency: 80,
+        blendMode: 'ADD',
+        emitZone: { type: 'random', source: new Phaser.Geom.Circle(0, 0, 60) },
+      });
+      aura.setDepth(3.5);
+      mon.setData('aura', aura);
     }
     mon.setData('ring', this.attachRing(mon, w + 50, groundTop - 30, 0x22c55e, 70));
   }
@@ -422,6 +452,11 @@ export default class GameScene extends Phaser.Scene {
       trail.stop();
       this.time.delayedCall(800, () => trail.destroy());
     }
+    const aura = mon.getData('aura');
+    if (aura) {
+      aura.stop();
+      this.time.delayedCall(1200, () => aura.destroy());
+    }
 
     this.tweens.add({
       targets: mon,
@@ -435,18 +470,21 @@ export default class GameScene extends Phaser.Scene {
   spawnPowerUp() {
     const types = ['magnet', 'shield', 'double'];
     const type = types[Math.floor(Math.random() * types.length)];
-    const icon = type === 'magnet' ? '🧲' : type === 'shield' ? '🛡️' : '⭐';
+    const spriteKey = type === 'magnet' ? 'pu-magnet' : type === 'shield' ? 'pu-shield' : 'pu-star';
     const w = this.scale.width;
     const groundTop = this.scale.height - 120;
     const y = groundTop - 110;
 
-    const pu = this.add.text(w + 50, y, icon, { fontSize: '60px' }).setOrigin(0.5).setDepth(4);
+    const pu = this.add.image(w + 50, y, spriteKey).setOrigin(0.5).setDepth(4).setScale(0.55);
     this.physics.add.existing(pu);
-    pu.body.setSize(60, 60);
+    pu.body.setSize(70, 70);
     pu.body.setAllowGravity(false);
     pu.body.setVelocityX(-this.scrollSpeed);
     pu.setData('puType', type);
     this.powerUps.add(pu);
+
+    // Mjuk glow så man ser att de är speciella.
+    pu.postFX.addGlow(0xfde047, 4, 0, false, 0.1, 8);
 
     this.tweens.add({
       targets: pu,
@@ -470,7 +508,9 @@ export default class GameScene extends Phaser.Scene {
     this.activeBuff = type;
     const duration = type === 'shield' ? 60000 : type === 'magnet' ? 8000 : 10000;
     this.buffEndsAt = this.time.now + duration;
-    const labels = { magnet: '🧲 Magnet!', shield: '🛡️ Sköld!', double: '⭐ Dubbla poäng!' };
+    const labels = { magnet: 'Magnet!', shield: 'Sköld!', double: 'Dubbla poäng!' };
+    const iconKey = type === 'magnet' ? 'pu-magnet' : type === 'shield' ? 'pu-shield' : 'pu-star';
+    this.buffIcon.setTexture(iconKey).setVisible(true);
     this.showFloatingText(labels[type], this.scale.width / 2, 200, '#fef9c3', '#7c2d12');
     this.safePlay('sfx-shiny', { volume: 0.6 });
   }
@@ -478,6 +518,7 @@ export default class GameScene extends Phaser.Scene {
   deactivateBuff() {
     this.activeBuff = null;
     this.buffText.setText('');
+    this.buffIcon.setVisible(false);
   }
 
   showFloatingText(text, x, y, fillColor, strokeColor) {
@@ -636,8 +677,7 @@ export default class GameScene extends Phaser.Scene {
     // Buff timer
     if (this.activeBuff) {
       const remaining = Math.max(0, Math.ceil((this.buffEndsAt - this.time.now) / 1000));
-      const icon = this.activeBuff === 'magnet' ? '🧲' : this.activeBuff === 'shield' ? '🛡️' : '⭐';
-      this.buffText.setText(`${icon} ${remaining}s`);
+      this.buffText.setText(`${remaining}s`);
       if (this.time.now >= this.buffEndsAt) this.deactivateBuff();
     }
 
@@ -673,6 +713,8 @@ export default class GameScene extends Phaser.Scene {
         if (ring) ring.destroy();
         const trail = m.getData('trail');
         if (trail) trail.destroy();
+        const aura = m.getData('aura');
+        if (aura) aura.destroy();
         m.destroy();
       }
       return true;

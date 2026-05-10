@@ -112,12 +112,14 @@ export default class StickerBookScene extends Phaser.Scene {
       return;
     }
 
-    const cols = page.shinyPage ? (visible.length <= 8 ? 4 : 6) : 6;
+    const cols = page.shinyPage ? (visible.length <= 8 ? 4 : 6) : (visible.length > 36 ? 8 : 6);
     const rows = Math.max(1, Math.ceil(visible.length / cols));
-    const cellW = w * 0.7 / cols;
+    const cellW = w * 0.78 / cols;
     const cellH = (h - 200) / rows;
-    const startX = w * 0.15 + cellW / 2;
+    const startX = w * 0.11 + cellW / 2;
     const startY = 130 + cellH / 2;
+    // Skala spriten dynamiskt så den får plats även när det är 60+ pokémon
+    const spriteScale = Math.max(0.6, Math.min(2, (cellH - 30) / 50));
 
     visible.forEach((p, i) => {
       const col = i % cols;
@@ -128,28 +130,29 @@ export default class StickerBookScene extends Phaser.Scene {
       if (page.shinyPage) {
         this.renderShinyCard(p, x, y, cellW, cellH);
       } else {
-        this.renderRegularSticker(p, x, y, cellH);
+        this.renderRegularSticker(p, x, y, cellH, spriteScale);
       }
     });
 
     this.addPageIndicator();
   }
 
-  renderRegularSticker(p, x, y, cellH) {
+  renderRegularSticker(p, x, y, cellH, spriteScale = 2) {
     const seen = this.book.isSeen(p.id);
     const count = this.book.getCount(p.id);
-    const sprite = this.add.image(x, y, `pokemon-${p.id}`).setScale(2);
+    const sprite = this.add.image(x, y, `pokemon-${p.id}`).setScale(spriteScale);
     if (!seen) {
       sprite.setTint(0x000000);
       sprite.setAlpha(0.25);
     }
-    const label = this.add.text(x, y + cellH * 0.35, seen ? p.name : '???', {
-      fontFamily: 'Arial', fontSize: '16px', color: '#7c2d12',
+    const labelSize = Math.max(10, Math.floor(spriteScale * 8));
+    const label = this.add.text(x, y + cellH * 0.38, seen ? p.name : '???', {
+      fontFamily: 'Arial', fontSize: `${labelSize}px`, color: '#7c2d12',
     }).setOrigin(0.5);
     this.pageGroup.addMultiple([sprite, label]);
     if (count > 1) {
-      const badge = this.add.text(x + 30, y - 30, `×${count}`, {
-        fontFamily: 'Arial Black', fontSize: '14px',
+      const badge = this.add.text(x + 24 * spriteScale / 2, y - 24 * spriteScale / 2, `×${count}`, {
+        fontFamily: 'Arial Black', fontSize: '13px',
         color: '#ffffff', stroke: '#7c2d12', strokeThickness: 3,
       }).setOrigin(0.5);
       this.pageGroup.add(badge);
