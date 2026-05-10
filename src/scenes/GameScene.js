@@ -170,6 +170,7 @@ export default class GameScene extends Phaser.Scene {
     obstacle.body.setSize(40, 40);
     obstacle.body.setOffset((obstacle.width - 40) / 2, obstacle.height - 40);
     obstacle.setData('type', type);
+    obstacle.postFX.addGlow(0x000000, 2, 0, false, 0.1, 6);
     obstacle.setData('ring', this.attachRing(obstacle, w + 50, groundTop - 30, 0xef4444));
   }
 
@@ -200,7 +201,22 @@ export default class GameScene extends Phaser.Scene {
     mon.body.setSize(45, 45);
     mon.setData('pokemonId', pokemonId);
     mon.setData('shiny', shiny);
-    if (shiny) mon.setTint(0xffffaa);
+    if (shiny) {
+      mon.setTint(0xffffaa);
+      mon.postFX.addShine(0.5, 1, 6, false);
+      const trail = this.add.particles(0, 0, 'glitter', {
+        follow: mon,
+        lifespan: 700,
+        speed: { min: 30, max: 80 },
+        scale: { start: 0.7, end: 0 },
+        tint: [0xffd700, 0xffffaa, 0xffffff, 0xff99ff],
+        quantity: 1,
+        frequency: 70,
+        blendMode: 'ADD',
+      });
+      trail.setDepth(4);
+      mon.setData('trail', trail);
+    }
     mon.setData('ring', this.attachRing(mon, w + 50, groundTop - 30, 0x22c55e, 70));
   }
 
@@ -245,6 +261,12 @@ export default class GameScene extends Phaser.Scene {
         duration: 500,
         onComplete: () => ring.destroy(),
       });
+    }
+
+    const trail = mon.getData('trail');
+    if (trail) {
+      trail.stop();
+      this.time.delayedCall(800, () => trail.destroy());
     }
 
     this.tweens.add({
@@ -391,6 +413,8 @@ export default class GameScene extends Phaser.Scene {
       if (m && m.x < -100) {
         const ring = m.getData('ring');
         if (ring) ring.destroy();
+        const trail = m.getData('trail');
+        if (trail) trail.destroy();
         m.destroy();
       }
       return true;
