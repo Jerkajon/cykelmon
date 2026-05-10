@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { createStorage } from '../utils/storage.js';
 
 const SHOWCASE = [25, 133, 7, 1, 16, 43, 79];
 
@@ -90,6 +91,18 @@ export default class HomeScene extends Phaser.Scene {
       stroke: '#b45309',
       strokeThickness: 5,
     }).setOrigin(0.5);
+
+    // High score-banner
+    const hs = createStorage().get('pokemoncykelspel.highscore') || 0;
+    if (hs > 0) {
+      this.add.text(w / 2, h * 0.69, `🏆 Bästa: ${hs}`, {
+        fontFamily: 'Arial Black',
+        fontSize: Math.floor(h * 0.04) + 'px',
+        color: '#fde047',
+        stroke: '#1d4ed8',
+        strokeThickness: 4,
+      }).setOrigin(0.5);
+    }
 
     // SPELA-knapp
     const playBtn = this.add.rectangle(w / 2, h * 0.78, w * 0.45, h * 0.13, 0xfacc15)

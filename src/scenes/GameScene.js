@@ -4,7 +4,7 @@ import { PokemonSpawner } from '../systems/PokemonSpawner.js';
 import { StickerBook } from '../systems/StickerBook.js';
 import { createStorage } from '../utils/storage.js';
 import { POKEMON } from '../data/pokemon.js';
-import { BIOMES, biomeById } from '../data/biomes.js';
+import { BIOMES } from '../data/biomes.js';
 import { BiomeManager } from '../systems/BiomeManager.js';
 
 export default class GameScene extends Phaser.Scene {
@@ -76,7 +76,14 @@ export default class GameScene extends Phaser.Scene {
     this.bike.body.setSize(60, 60);
     this.physics.add.collider(this.bike, this.groundBody);
 
-    this.scrollSpeed = 200;
+    // Bake svart outline in i obstacle-texturer (en gång) → ingen runtime-glow.
+    ['obstacle-rock', 'obstacle-log', 'obstacle-puddle', 'obstacle-shell', 'obstacle-stalagmite']
+      .forEach((k) => this.bakeOutline(k, 1, '#000000'));
+
+    this.baseSpeed = 200;
+    this.maxSpeed = 360;
+    this.scrollSpeed = this.baseSpeed;
+    this.startTime = this.time.now;
 
     // Hindergenerator
     this.obstacleSpawner = new ObstacleSpawner({
@@ -151,6 +158,22 @@ export default class GameScene extends Phaser.Scene {
     // Tap → hopp om vi står på marken.
     this.input.on('pointerdown', () => this.tryJump());
 
+    // Score-system
+    this.score = 0;
+    this.initialHighScore = createStorage().get('pokemoncykelspel.highscore') || 0;
+    this.highScore = this.initialHighScore;
+    this.beatRecord = false;
+
+    this.scoreText = this.add.text(w / 2, 24, '0', {
+      fontFamily: 'Arial Black', fontSize: '44px',
+      color: '#ffffff', stroke: '#1d4ed8', strokeThickness: 6,
+    }).setOrigin(0.5, 0).setDepth(1500).setScrollFactor(0);
+
+    this.highScoreText = this.add.text(w - 24, 28, `🏆 ${this.highScore}`, {
+      fontFamily: 'Arial Black', fontSize: '24px',
+      color: '#fde047', stroke: '#000000', strokeThickness: 4,
+    }).setOrigin(1, 0).setDepth(1500).setScrollFactor(0);
+
     this.safeBgm(`bgm-${startBiome.id}`);
   }
 
@@ -170,7 +193,6 @@ export default class GameScene extends Phaser.Scene {
     obstacle.body.setSize(40, 40);
     obstacle.body.setOffset((obstacle.width - 40) / 2, obstacle.height - 40);
     obstacle.setData('type', type);
-    obstacle.postFX.addGlow(0x000000, 2, 0, false, 0.1, 6);
     obstacle.setData('ring', this.attachRing(obstacle, w + 50, groundTop - 30, 0xef4444));
   }
 
@@ -227,16 +249,35 @@ export default class GameScene extends Phaser.Scene {
     this.physics.add.existing(ring);
     ring.body.setAllowGravity(false);
     ring.body.setVelocityX(-this.scrollSpeed);
-    this.tweens.add({
-      targets: ring,
-      scale: 1.15,
-      alpha: 0.35,
-      duration: 700,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Sine.inOut',
-    });
     return ring;
+  }
+
+  bakeOutline(textureKey, thickness, color) {
+    if (!this.textures.exists(textureKey)) return;
+    const tex = this.textures.get(textureKey);
+    const src = tex.getSourceImage();
+    const w = src.width + thickness * 2;
+    const h = src.height + thickness * 2;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+
+    for (let dx = -thickness; dx <= thickness; dx++) {
+      for (let dy = -thickness; dy <= thickness; dy++) {
+        if (dx === 0 && dy === 0) continue;
+        ctx.drawImage(src, thickness + dx, thickness + dy);
+      }
+    }
+    ctx.globalCompositeOperation = 'source-in';
+    ctx.fillStyle = color;
+    ctx.fillRect(0, 0, w, h);
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.drawImage(src, thickness, thickness);
+
+    this.textures.remove(textureKey);
+    this.textures.addCanvas(textureKey, canvas);
   }
 
   handlePokemonPickup(mon) {
@@ -250,7 +291,20 @@ export default class GameScene extends Phaser.Scene {
 
     if (shiny) this.spawnGlitter(mon.x, mon.y);
 
-    this.showFloatingText('Bra jobbat!', this.bike.x + 60, this.bike.y - 80, '#bbf7d0', '#166534');
+    // Score upp
+    this.score += shiny ? 3 : 1;
+    this.scoreText.setText(this.score);
+    if (this.score > this.highScore) {
+      this.highScore = this.score;
+      this.highScoreText.setText(`🏆 ${this.highScore}`);
+      createStorage().set('pokemoncykelspel.highscore', this.highScore);
+      if (!this.beatRecord && this.initialHighScore > 0) {
+        this.beatRecord = true;
+        this.showFloatingText('NYTT REKORD!', this.scale.width / 2, 120, '#fde047', '#1d4ed8');
+      }
+    }
+
+    this.showFloatingText(shiny ? 'GLITTRIG!' : 'Bra jobbat!', this.bike.x + 60, this.bike.y - 80, '#bbf7d0', '#166534');
 
     const ring = mon.getData('ring');
     if (ring) {
@@ -360,10 +414,20 @@ export default class GameScene extends Phaser.Scene {
   }
 
   update(time, delta) {
+    // Gradvis speed-up: nå max efter ~90 sek.
+    const elapsed = (this.time.now - this.startTime) / 1000;
+    const ramp = Math.min(elapsed / 90, 1);
+    this.scrollSpeed = this.baseSpeed + (this.maxSpeed - this.baseSpeed) * ramp;
+
     const inBonk = this.time.now < this.bonkUntilTime;
     const effectiveSpeed = inBonk ? this.scrollSpeed * 0.4 : this.scrollSpeed;
     this.biomeManager.tick(delta);
     this.ground.tilePositionX += (effectiveSpeed * delta) / 1000;
+
+    // Delad puls för alla ringar (en sin-funktion istället för per-ring tweens).
+    const phase = (Math.sin(this.time.now / 350) + 1) / 2;
+    const pulseScale = 1 + phase * 0.15;
+    const pulseAlpha = 0.4 + phase * 0.3;
 
     const airborne = !(this.bike.body.blocked.down || this.bike.body.touching.down);
 
@@ -382,12 +446,16 @@ export default class GameScene extends Phaser.Scene {
     });
     if (pokemonEvent) this.spawnPokemon(pokemonEvent);
 
-    // Sätt aktuell hastighet på alla rörliga (inkl. ringar).
+    // Sätt aktuell hastighet på alla rörliga (inkl. ringar) + uppdatera ring-puls.
     this.obstacles.children.each((o) => {
       if (o && o.body) {
         o.setVelocityX(-effectiveSpeed);
         const ring = o.getData('ring');
-        if (ring && ring.body) ring.body.setVelocityX(-effectiveSpeed);
+        if (ring && ring.body) {
+          ring.body.setVelocityX(-effectiveSpeed);
+          ring.setScale(pulseScale);
+          ring.setAlpha(pulseAlpha);
+        }
       }
       return true;
     });
@@ -395,7 +463,11 @@ export default class GameScene extends Phaser.Scene {
       if (m && m.body && !m.getData('picked')) {
         m.setVelocityX(-effectiveSpeed);
         const ring = m.getData('ring');
-        if (ring && ring.body) ring.body.setVelocityX(-effectiveSpeed);
+        if (ring && ring.body) {
+          ring.body.setVelocityX(-effectiveSpeed);
+          ring.setScale(pulseScale);
+          ring.setAlpha(pulseAlpha);
+        }
       }
       return true;
     });
