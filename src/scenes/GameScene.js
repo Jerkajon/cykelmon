@@ -476,7 +476,10 @@ export default class GameScene extends Phaser.Scene {
     const spriteKey = type === 'magnet' ? 'pu-magnet' : type === 'shield' ? 'pu-shield' : 'pu-star';
     const w = this.scale.width;
     const groundTop = this.scale.height - 150;
-    const y = groundTop - 110;
+    // Bikes hopp-höjd är ~163 px (v=-700, g=1500). PowerUp y måste vara så att
+    // bike-body bot (sprite_y - 163 + 30) >= pu body top (pu_y - 35).
+    // Med bike standard y = 522: hopp-topp body bot = 389. → pu_y <= ~424.
+    const y = groundTop - 140;
 
     const pu = this.add.image(w + 50, y, spriteKey).setOrigin(0.5).setDepth(4).setScale(0.55);
     this.physics.add.existing(pu);
