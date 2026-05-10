@@ -137,6 +137,7 @@ export default class StickerBookScene extends Phaser.Scene {
 
   renderRegularSticker(p, x, y, cellH) {
     const seen = this.book.isSeen(p.id);
+    const count = this.book.getCount(p.id);
     const sprite = this.add.image(x, y, `pokemon-${p.id}`).setScale(2);
     if (!seen) {
       sprite.setTint(0x000000);
@@ -146,6 +147,13 @@ export default class StickerBookScene extends Phaser.Scene {
       fontFamily: 'Arial', fontSize: '16px', color: '#7c2d12',
     }).setOrigin(0.5);
     this.pageGroup.addMultiple([sprite, label]);
+    if (count > 1) {
+      const badge = this.add.text(x + 30, y - 30, `×${count}`, {
+        fontFamily: 'Arial Black', fontSize: '14px',
+        color: '#ffffff', stroke: '#7c2d12', strokeThickness: 3,
+      }).setOrigin(0.5);
+      this.pageGroup.add(badge);
+    }
   }
 
   renderShinyCard(p, x, y, cellW, cellH) {

@@ -1,7 +1,9 @@
 import Phaser from 'phaser';
 import { createStorage } from '../utils/storage.js';
+import { activeCycle, nextCycle } from '../data/cycles.js';
 
 const SHOWCASE = [25, 133, 7, 1, 16, 43, 79];
+const LIFETIME_KEY = 'pokemoncykelspel.lifetimeCount';
 
 export default class HomeScene extends Phaser.Scene {
   constructor() {
@@ -12,6 +14,13 @@ export default class HomeScene extends Phaser.Scene {
     for (const id of SHOWCASE) {
       this.load.image(`pokemon-${id}`, `pokemon/${id}.png`);
     }
+    this.load.image('bike', 'characters/bike.png');
+    this.load.image('bike-red', 'characters/bike-red.png');
+    this.load.image('bike-purple', 'characters/bike-unicycle.png');
+    this.load.image('bike-gold', 'characters/bike-hover.png');
+    this.load.on('loaderror', (file) => {
+      if (file.key && file.key.startsWith('bike-')) return;
+    });
   }
 
   create() {
@@ -95,13 +104,40 @@ export default class HomeScene extends Phaser.Scene {
     // High score-banner
     const hs = createStorage().get('pokemoncykelspel.highscore') || 0;
     if (hs > 0) {
-      this.add.text(w / 2, h * 0.69, `🏆 Bästa: ${hs}`, {
+      this.add.text(w / 2, h * 0.66, `🏆 Bästa: ${hs}`, {
         fontFamily: 'Arial Black',
-        fontSize: Math.floor(h * 0.04) + 'px',
+        fontSize: Math.floor(h * 0.038) + 'px',
         color: '#fde047',
         stroke: '#1d4ed8',
         strokeThickness: 4,
       }).setOrigin(0.5);
+    }
+
+    // Cykel-info: visa nuvarande + nästa upplåsning
+    const lifetime = createStorage().get(LIFETIME_KEY) || 0;
+    const cycle = activeCycle(lifetime);
+    const next = nextCycle(lifetime);
+    const cycleY = h * 0.92;
+
+    const bikeKey = this.textures.exists(`bike-${cycle.id}`) ? `bike-${cycle.id}` : 'bike';
+    const bikeSprite = this.add.image(w * 0.13, cycleY, bikeKey).setScale(0.55);
+    if (bikeKey === 'bike' && cycle.tint !== 0xffffff) bikeSprite.setTint(cycle.tint);
+
+    this.add.text(w * 0.22, cycleY - 14, `Cykel: ${cycle.name}`, {
+      fontFamily: 'Arial Black', fontSize: Math.floor(h * 0.028) + 'px',
+      color: '#1f2937',
+    }).setOrigin(0, 0.5);
+
+    if (next) {
+      this.add.text(w * 0.22, cycleY + 14, `Nästa: ${next.name} (${lifetime}/${next.threshold})`, {
+        fontFamily: 'Arial', fontSize: Math.floor(h * 0.024) + 'px',
+        color: '#374151',
+      }).setOrigin(0, 0.5);
+    } else {
+      this.add.text(w * 0.22, cycleY + 14, 'Alla cyklar upplåsta! ⭐', {
+        fontFamily: 'Arial', fontSize: Math.floor(h * 0.024) + 'px',
+        color: '#b45309',
+      }).setOrigin(0, 0.5);
     }
 
     // SPELA-knapp

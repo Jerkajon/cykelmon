@@ -24,14 +24,19 @@ export class StickerBook {
   }
 
   markSeen({ id, shiny }) {
-    const existing = this.state.pokemon[id] || { seen: false, shiny: false, firstSeenAt: null };
+    const existing = this.state.pokemon[id] || { seen: false, shiny: false, count: 0, firstSeenAt: null };
     const next = {
       seen: true,
       shiny: existing.shiny || !!shiny,
+      count: (existing.count || 0) + 1,
       firstSeenAt: existing.firstSeenAt || Date.now(),
     };
     this.state.pokemon[id] = next;
     this.persist();
+  }
+
+  getCount(id) {
+    return (this.state.pokemon[id] && this.state.pokemon[id].count) || 0;
   }
 
   isSeen(id) {

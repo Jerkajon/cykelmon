@@ -22,6 +22,14 @@ export const BIOMES = [
     obstacleTypes: ['stalagmite', 'rock'],
     get pokemonIds() { return pokemonByBiome('cave').map((p) => p.id); },
   },
+  {
+    id: 'ocean',
+    name: 'Hav',
+    bgColor: 0x0c4a6e,
+    obstacleTypes: ['shell', 'puddle'],
+    // Avancerade vatten-pokémon (evolutions + djuphavs-typer).
+    pokemonIds: [9, 73, 80, 87, 91, 99, 117, 121],
+  },
 ];
 
 export function biomeById(id) {
