@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import HomeScene from './scenes/HomeScene.js';
 import GameScene from './scenes/GameScene.js';
+import ResultScene from './scenes/ResultScene.js';
 import StickerBookScene from './scenes/StickerBookScene.js';
 
 const config = {
@@ -20,7 +21,7 @@ const config = {
       debug: false,
     },
   },
-  scene: [HomeScene, GameScene, StickerBookScene],
+  scene: [HomeScene, GameScene, ResultScene, StickerBookScene],
 };
 
 new Phaser.Game(config);
