@@ -4,4 +4,5 @@ dist/
 *.log
 .vite/
 .claude/
+.superpowers/
 assets/pokemon/*.png
