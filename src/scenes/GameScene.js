@@ -5,8 +5,13 @@ import { StickerBook } from '../systems/StickerBook.js';
 import { createStorage } from '../utils/storage.js';
 import { POKEMON } from '../data/pokemon.js';
 import { BIOMES } from '../data/biomes.js';
+import { biomeById } from '../data/biomes.js';
 import { BiomeManager } from '../systems/BiomeManager.js';
 import { activeCycle, unlockedCycles } from '../data/cycles.js';
+import { levelById } from '../data/levels.js';
+import { LevelLoader } from '../systems/LevelLoader.js';
+import { StarTracker } from '../systems/StarTracker.js';
+import { PlatformPhysics } from '../systems/PlatformPhysics.js';
 
 const LIFETIME_KEY = 'pokemoncykelspel.lifetimeCount';
 const SELECTED_KEY = 'pokemoncykelspel.selectedCycle';
@@ -14,6 +19,24 @@ const SELECTED_KEY = 'pokemoncykelspel.selectedCycle';
 export default class GameScene extends Phaser.Scene {
   constructor() {
     super({ key: 'GameScene' });
+  }
+
+  init(data) {
+    this.levelId = data.levelId || '1-1';
+    const levelData = levelById(this.levelId);
+    if (!levelData) {
+      console.error(`Level ${this.levelId} not found, defaulting to 1-1`);
+      this.levelLoader = new LevelLoader(levelById('1-1'));
+    } else {
+      this.levelLoader = new LevelLoader(levelData);
+    }
+    this.biome = biomeById(this.levelLoader.data.worldId);
+    this.starTracker = new StarTracker({ randomCount: this.levelLoader.data.randomCount });
+    this.platformPhysics = new PlatformPhysics({
+      platforms: this.levelLoader.platforms(),
+      pits: this.levelLoader.pits(),
+      obstacles: this.levelLoader.obstacles(),
+    });
   }
 
   preload() {
