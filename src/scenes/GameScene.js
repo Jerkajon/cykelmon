@@ -91,7 +91,8 @@ export default class GameScene extends Phaser.Scene {
     const h = this.scale.height;
 
     const groundHeight = 150;
-    const groundY = h - groundHeight / 2;
+    this.groundY = h - groundHeight / 2;
+    const groundY = this.groundY;
     const levelLength = this.levelLoader.length;
 
     // World + camera bounds
@@ -106,10 +107,37 @@ export default class GameScene extends Phaser.Scene {
     this.ground = this.add.tileSprite(0, h - groundHeight, levelLength, groundHeight, `ground-${this.biome.id}`)
       .setOrigin(0, 0).setDepth(1);
 
-    // Osynlig physics-mark för kollision — täcker hela leveln
-    this.groundBody = this.physics.add.staticImage(levelLength / 2, groundY).setVisible(false);
-    this.groundBody.setDisplaySize(levelLength, groundHeight);
-    this.groundBody.refreshBody();
+    // Mörka pits ovanpå ground-sprite
+    this.levelLoader.pits().forEach((pit) => {
+      const pitWidth = pit.xEnd - pit.xStart;
+      const pitGfx = this.add.graphics().setDepth(2);
+      pitGfx.fillStyle(0x000000, 1);
+      pitGfx.fillRect(pit.xStart, h - groundHeight, pitWidth, groundHeight);
+    });
+
+    // Ground physics: en static body per mark-segment (mellan pits)
+    this.groundBodies = this.physics.add.staticGroup();
+    let prevEnd = 0;
+    this.levelLoader.pits().forEach((pit) => {
+      if (pit.xStart > prevEnd) {
+        const segWidth = pit.xStart - prevEnd;
+        const segCenter = prevEnd + segWidth / 2;
+        const seg = this.groundBodies.create(segCenter, groundY, null);
+        seg.setVisible(false);
+        seg.setDisplaySize(segWidth, groundHeight);
+        seg.refreshBody();
+      }
+      prevEnd = pit.xEnd;
+    });
+    // Sista segmentet efter sista pit till nivåns slut
+    if (prevEnd < levelLength) {
+      const segWidth = levelLength - prevEnd;
+      const segCenter = prevEnd + segWidth / 2;
+      const seg = this.groundBodies.create(segCenter, groundY, null);
+      seg.setVisible(false);
+      seg.setDisplaySize(segWidth, groundHeight);
+      seg.refreshBody();
+    }
 
     // Plattformar från level-data (staticGroup — immobile physics objects)
     this.platforms = this.physics.add.staticGroup();
@@ -140,7 +168,8 @@ export default class GameScene extends Phaser.Scene {
     this.bike.body.setSize(60, 60);
     if (bikeKey === 'bike' && cycle.tint !== 0xffffff) this.bike.setTint(cycle.tint);
     if (cycle.glow) this.bike.postFX.addGlow(cycle.tint, 4, 0, false, 0.1, 12);
-    this.physics.add.collider(this.bike, this.groundBody);
+    this.physics.add.collider(this.bike, this.groundBodies);
+    this.respawning = false;
 
     // Kamera följer cyklisten, konstant forward-hastighet
     this.cameras.main.startFollow(this.bike, true, 0.5, 0.0);
@@ -325,6 +354,33 @@ export default class GameScene extends Phaser.Scene {
 
     this.starTracker.recordBonk();
     this.showFloatingText('Hoppsan!', this.bike.x + 60, this.bike.y - 80, '#fecaca', '#b91c1c');
+  }
+
+  handlePitFall() {
+    if (this.respawning) return;
+    this.respawning = true;
+    this.cameras.main.shake(200, 0.01);
+    this.safePlay('sfx-bonk', { volume: 0.6 });
+
+    const safePlatform = this.platformPhysics.lastSafePlatformBefore(this.bike.x);
+
+    let respawnX, respawnY;
+    if (safePlatform) {
+      respawnX = safePlatform.x + safePlatform.width / 2;
+      respawnY = safePlatform.y - 50;
+    } else {
+      respawnX = 200;
+      respawnY = this.groundY - 100;
+    }
+
+    this.bike.setPosition(respawnX, respawnY);
+    this.bike.setVelocity(0, 0);
+
+    this.showFloatingText('Hoppsan!', this.bike.x, this.bike.y - 80, '#fecaca', '#b91c1c');
+
+    this.time.delayedCall(500, () => {
+      this.respawning = false;
+    });
   }
 
   bakeOutline(textureKey, thickness, color) {
@@ -512,6 +568,11 @@ export default class GameScene extends Phaser.Scene {
       this.bike.setVelocityX(this.forwardSpeed);
     } else {
       this.bike.setVelocityX(this.forwardSpeed * 0.4);
+    }
+
+    // Pit-detection: cyklist under mark-nivå i ett pit-område → respawn
+    if (!this.respawning && this.bike.y > this.groundY + 50 && this.platformPhysics.isOverPit(this.bike.x)) {
+      this.handlePitFall();
     }
 
     // Delad puls för alla ringar (en sin-funktion istället för per-ring tweens).
