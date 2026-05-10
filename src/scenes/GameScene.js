@@ -105,6 +105,7 @@ export default class GameScene extends Phaser.Scene {
     const startBiome = this.biomeManager.current();
     this.bgImage.setTexture(`bg-${startBiome.id}`).setDisplaySize(w, h);
     this.ground.setTexture(`ground-${startBiome.id}`);
+    this.cameras.main.setBackgroundColor(startBiome.bgColor);
 
     // Spawners initieras med startbiomets data.
     this.obstacleSpawner.setObstacleTypes(startBiome.obstacleTypes);
@@ -169,13 +170,16 @@ export default class GameScene extends Phaser.Scene {
     obstacle.body.setSize(40, 40);
     obstacle.body.setOffset((obstacle.width - 40) / 2, obstacle.height - 40);
     obstacle.setData('type', type);
+    obstacle.setData('ring', this.attachRing(obstacle, w + 50, groundTop - 30, 0xef4444));
   }
 
   handleBonk(obstacle) {
     if (this.time.now < this.bonkUntilTime) return; // redan i bonk-läge
     this.bonkUntilTime = this.time.now + 500;
 
-    // Förstör hindret så vi inte triggas igen.
+    // Förstör hindret + dess ring så vi inte triggas igen.
+    const ring = obstacle.getData('ring');
+    if (ring) ring.destroy();
     obstacle.destroy();
 
     // Kort sprite-tint + camera shake.
@@ -183,18 +187,40 @@ export default class GameScene extends Phaser.Scene {
     this.safePlay('sfx-bonk', { volume: 0.7 });
     this.cameras.main.shake(150, 0.005);
     this.time.delayedCall(300, () => this.bike.clearTint());
+
+    this.showFloatingText('Hoppsan!', this.bike.x + 60, this.bike.y - 80, '#fecaca', '#b91c1c');
   }
 
   spawnPokemon({ pokemonId, shiny }) {
     const w = this.scale.width;
     const groundTop = this.scale.height - 120;
     const key = `pokemon-${pokemonId}`;
-    const mon = this.pokemons.create(w + 50, groundTop - 30, key).setDepth(4);
+    const mon = this.pokemons.create(w + 50, groundTop - 30, key).setDepth(4).setScale(1.35);
     mon.setVelocityX(-this.scrollSpeed);
-    mon.body.setSize(30, 30);
+    mon.body.setSize(45, 45);
     mon.setData('pokemonId', pokemonId);
     mon.setData('shiny', shiny);
     if (shiny) mon.setTint(0xffffaa);
+    mon.setData('ring', this.attachRing(mon, w + 50, groundTop - 30, 0x22c55e, 70));
+  }
+
+  attachRing(target, x, y, color, radius = 50) {
+    const ring = this.add.circle(x, y, radius, 0, 0)
+      .setStrokeStyle(4, color, 0.6)
+      .setDepth(3);
+    this.physics.add.existing(ring);
+    ring.body.setAllowGravity(false);
+    ring.body.setVelocityX(-this.scrollSpeed);
+    this.tweens.add({
+      targets: ring,
+      scale: 1.15,
+      alpha: 0.35,
+      duration: 700,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.inOut',
+    });
+    return ring;
   }
 
   handlePokemonPickup(mon) {
@@ -208,12 +234,53 @@ export default class GameScene extends Phaser.Scene {
 
     if (shiny) this.spawnGlitter(mon.x, mon.y);
 
+    this.showFloatingText('Bra jobbat!', this.bike.x + 60, this.bike.y - 80, '#bbf7d0', '#166534');
+
+    const ring = mon.getData('ring');
+    if (ring) {
+      this.tweens.add({
+        targets: ring,
+        alpha: 0,
+        scale: 1.6,
+        duration: 500,
+        onComplete: () => ring.destroy(),
+      });
+    }
+
     this.tweens.add({
       targets: mon,
       y: mon.y - 80,
       alpha: 0,
       duration: 600,
       onComplete: () => mon.destroy(),
+    });
+  }
+
+  showFloatingText(text, x, y, fillColor, strokeColor) {
+    const t = this.add.text(x, y, text, {
+      fontFamily: 'Arial Black',
+      fontSize: '60px',
+      color: fillColor,
+      stroke: strokeColor,
+      strokeThickness: 8,
+      align: 'center',
+    }).setOrigin(0.5).setDepth(2500).setScale(0.3);
+
+    this.tweens.add({
+      targets: t,
+      scale: 1.1,
+      duration: 220,
+      ease: 'Back.out',
+      onComplete: () => {
+        this.tweens.add({
+          targets: t,
+          alpha: 0,
+          y: t.y - 50,
+          duration: 600,
+          delay: 350,
+          onComplete: () => t.destroy(),
+        });
+      },
     });
   }
 
@@ -256,6 +323,7 @@ export default class GameScene extends Phaser.Scene {
       onComplete: () => {
         this.bgImage.setTexture(`bg-${biome.id}`).setDisplaySize(w, h);
         this.ground.setTexture(`ground-${biome.id}`);
+        this.cameras.main.setBackgroundColor(biome.bgColor);
         this.obstacleSpawner.setObstacleTypes(biome.obstacleTypes);
         this.pokemonSpawner.setPokemonIds(biome.pokemonIds);
         this.safeBgm(`bgm-${biome.id}`);
@@ -292,12 +360,40 @@ export default class GameScene extends Phaser.Scene {
     });
     if (pokemonEvent) this.spawnPokemon(pokemonEvent);
 
-    // Sätt aktuell hastighet på alla rörliga.
-    this.obstacles.children.each((o) => { if (o && o.body) o.setVelocityX(-effectiveSpeed); return true; });
-    this.pokemons.children.each((m) => { if (m && m.body && !m.getData('picked')) m.setVelocityX(-effectiveSpeed); return true; });
+    // Sätt aktuell hastighet på alla rörliga (inkl. ringar).
+    this.obstacles.children.each((o) => {
+      if (o && o.body) {
+        o.setVelocityX(-effectiveSpeed);
+        const ring = o.getData('ring');
+        if (ring && ring.body) ring.body.setVelocityX(-effectiveSpeed);
+      }
+      return true;
+    });
+    this.pokemons.children.each((m) => {
+      if (m && m.body && !m.getData('picked')) {
+        m.setVelocityX(-effectiveSpeed);
+        const ring = m.getData('ring');
+        if (ring && ring.body) ring.body.setVelocityX(-effectiveSpeed);
+      }
+      return true;
+    });
 
-    // Cleanup
-    this.obstacles.children.each((o) => { if (o && o.x < -100) o.destroy(); return true; });
-    this.pokemons.children.each((m) => { if (m && m.x < -100) m.destroy(); return true; });
+    // Cleanup (ta med ringen).
+    this.obstacles.children.each((o) => {
+      if (o && o.x < -100) {
+        const ring = o.getData('ring');
+        if (ring) ring.destroy();
+        o.destroy();
+      }
+      return true;
+    });
+    this.pokemons.children.each((m) => {
+      if (m && m.x < -100) {
+        const ring = m.getData('ring');
+        if (ring) ring.destroy();
+        m.destroy();
+      }
+      return true;
+    });
   }
 }
