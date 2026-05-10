@@ -1,0 +1,7 @@
+# tools/sprites/prompts/platforms.txt
+# Format: <world>|<prompt>
+# Generera med: python tools/sprites/generate_bg.py --prompt "<prompt>" --width 128 --height 24 --seed 42 --out assets/platforms/<world>.png
+forest|pixel art platform sprite, side view, mossy wooden log, green moss on top edge, brown bark side, transparent background, retro game asset, filling the entire frame
+beach|pixel art platform sprite, side view, weathered wooden plank with sand on top, scattered tiny seashells on top edge, pale wood side, transparent background, retro game asset
+cave|pixel art platform sprite, side view, dark gray stone block with glowing blue crystals on top edge, jagged stone texture on side, transparent background, retro game asset
+ocean|pixel art platform sprite, side view, coral platform with seaweed on top edge, pink and orange coral side, transparent background, retro game asset

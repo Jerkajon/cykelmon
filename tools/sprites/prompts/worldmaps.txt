@@ -1,0 +1,7 @@
+# tools/sprites/prompts/worldmaps.txt
+# Format: <world>|<prompt>
+# Generera med: python tools/sprites/generate_bg.py --prompt "<prompt>" --width 1280 --height 720 --seed 42 --out assets/worldmaps/<world>.png
+forest|pixel art world map background, top-down view of lush green forest with winding stone path, three clearings along the path for level nodes, small trees and flowers, soft sunlight, retro adventure game style, no characters, no text
+beach|pixel art world map background, top-down view of sandy tropical beach with palm trees, winding sand path with three clearings, ocean waves on one side, retro adventure game style, no characters, no text
+cave|pixel art world map background, top-down view of dark cave system with glowing crystals, winding stone path with three clearings, dim torchlight, mossy walls, retro adventure game style, no characters, no text
+ocean|pixel art world map background, top-down view of small island archipelago with sandbars and coral, winding sea path with three island clearings, gentle waves, retro adventure game style, no characters, no text
