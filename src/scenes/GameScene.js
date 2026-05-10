@@ -315,6 +315,8 @@ export default class GameScene extends Phaser.Scene {
 
     this.safeBgm(`bgm-${this.biome.id}`);
 
+    this.autoVaultCooldown = false;
+
     // Sätt initial velocity — update() tar över från första frame
     this.bike.setVelocityX(this.forwardSpeed);
   }
@@ -568,6 +570,20 @@ export default class GameScene extends Phaser.Scene {
       this.bike.setVelocityX(this.forwardSpeed);
     } else {
       this.bike.setVelocityX(this.forwardSpeed * 0.4);
+    }
+
+    // Auto-vault: hoppa automatiskt över markhinder
+    const onGround = this.bike.body.blocked.down || this.bike.body.touching.down;
+    const onPlatform = onGround && this.bike.y < this.groundY - 50;
+    const bikeContext = onPlatform ? this.bike.y : 'ground';
+
+    if (onGround && this.platformPhysics.shouldAutoVault(this.bike.x, bikeContext) && !this.autoVaultCooldown) {
+      this.bike.setVelocityY(-700);  // mindre än manuellt hopp -820 (räcker för rocks/logs)
+      this.autoVaultCooldown = true;
+      this.safePlay('sfx-jump', { volume: 0.4 });  // tystare ljud än manuellt hopp
+      this.time.delayedCall(400, () => {
+        this.autoVaultCooldown = false;
+      });
     }
 
     // Pit-detection: cyklist under mark-nivå i ett pit-område → respawn
