@@ -235,7 +235,7 @@ export default class GameScene extends Phaser.Scene {
 
   tryJump() {
     if (this.bike.body.blocked.down || this.bike.body.touching.down) {
-      this.bike.setVelocityY(-700);
+      this.bike.setVelocityY(-820);
       this.safePlay('sfx-jump', { volume: 0.6 });
     }
   }
