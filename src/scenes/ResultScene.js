@@ -23,7 +23,7 @@ export default class ResultScene extends Phaser.Scene {
     this.add.text(w / 2, 100, `${this.levelId} KLAR!`, {
       fontSize: '64px',
       color: '#ffd700',
-      fontFamily: 'monospace',
+      fontFamily: 'Arial Black',
       stroke: '#000',
       strokeThickness: 6,
     }).setOrigin(0.5);
@@ -37,7 +37,7 @@ export default class ResultScene extends Phaser.Scene {
       this.add.text(x, starY, filled ? '★' : '☆', {
         fontSize: '120px',
         color: filled ? '#ffd700' : '#666',
-        fontFamily: 'monospace',
+        fontFamily: 'Arial Black',
       }).setOrigin(0.5);
     }
 
@@ -46,7 +46,7 @@ export default class ResultScene extends Phaser.Scene {
       `Pokémon: ${this.pickedRandom + 1}/${this.totalRandom + 1}`, {
       fontSize: '36px',
       color: '#fff',
-      fontFamily: 'monospace',
+      fontFamily: 'Arial Black',
     }).setOrigin(0.5);
 
     // Knappar
@@ -57,7 +57,7 @@ export default class ResultScene extends Phaser.Scene {
       color: '#fff',
       backgroundColor: '#4a90d9',
       padding: { x: 24, y: 12 },
-      fontFamily: 'monospace',
+      fontFamily: 'Arial Black',
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
     const map = this.add.text(w / 2 + 200, btnY, 'KARTA', {
@@ -65,7 +65,7 @@ export default class ResultScene extends Phaser.Scene {
       color: '#fff',
       backgroundColor: '#5cb85c',
       padding: { x: 24, y: 12 },
-      fontFamily: 'monospace',
+      fontFamily: 'Arial Black',
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
     replay.on('pointerdown', () => {

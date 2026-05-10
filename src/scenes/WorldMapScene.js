@@ -61,7 +61,7 @@ export default class WorldMapScene extends Phaser.Scene {
       color: '#fff',
       stroke: '#000',
       strokeThickness: 4,
-      fontFamily: 'monospace',
+      fontFamily: 'Arial Black',
     }).setOrigin(0.5);
 
     // Render noder
@@ -102,7 +102,7 @@ export default class WorldMapScene extends Phaser.Scene {
       color: '#fff',
       backgroundColor: '#222',
       padding: { x: 12, y: 6 },
-      fontFamily: 'monospace',
+      fontFamily: 'Arial Black',
     }).setInteractive({ useHandCursor: true });
     home.on('pointerdown', () => this.scene.start('HomeScene'));
   }
@@ -115,15 +115,17 @@ export default class WorldMapScene extends Phaser.Scene {
       this.add.text(x, y, level.id, {
         fontSize: '20px',
         color: '#333',
-        fontFamily: 'monospace',
+        fontFamily: 'Arial Black',
         fontStyle: 'bold',
       }).setOrigin(0.5);
 
-      // Stjärn-strip ovanför
+      // Stjärn-strip ovanför med dark stroke för läsbarhet
       this.add.text(x, y - 60, '★'.repeat(stars) + '☆'.repeat(3 - stars), {
-        fontSize: '20px',
+        fontSize: '24px',
         color: '#ffd700',
-        fontFamily: 'monospace',
+        stroke: '#000',
+        strokeThickness: 4,
+        fontFamily: 'Arial Black',
       }).setOrigin(0.5);
 
       bg.setInteractive({ useHandCursor: true });

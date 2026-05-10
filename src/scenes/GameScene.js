@@ -585,8 +585,12 @@ export default class GameScene extends Phaser.Scene {
       });
     }
 
-    // Pit-detection: cyklist under mark-nivå i ett pit-område → respawn
-    if (!this.respawning && this.bike.y > this.groundY + 50 && this.platformPhysics.isOverPit(this.bike.x)) {
+    // Pit-detection: cyklist över pit OCH antingen fallit (y > groundY) eller stuck mot pit-vägg
+    const overPit = this.platformPhysics.isOverPit(this.bike.x);
+    const fallingOrStuck = this.bike.y > this.groundY ||
+      this.bike.body.blocked.right ||
+      this.bike.body.blocked.left;
+    if (!this.respawning && overPit && fallingOrStuck) {
       this.handlePitFall();
     }
 
