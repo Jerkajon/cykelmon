@@ -39,6 +39,7 @@ export default class WorldMapScene extends Phaser.Scene {
     this.load.image('worldmap-beach', 'worldmaps/beach.png');
     this.load.image('worldmap-cave', 'worldmaps/cave.png');
     this.load.image('worldmap-ocean', 'worldmaps/ocean.png');
+    this.load.image('worldmap-bike', 'characters/bike.png');
   }
 
   create() {
@@ -71,6 +72,26 @@ export default class WorldMapScene extends Phaser.Scene {
       // Unlock-logik: första nivån alltid unlocked, övriga om föregående är completed
       const unlocked = idx === 0 || (worldLevels[idx - 1] && (levelStars[worldLevels[idx - 1].id]?.completed));
       this.renderNode(pos.x, pos.y, level, stars, unlocked);
+    });
+
+    // Cyklist på senaste klarade nod (eller nästa unlocked om alla klarade)
+    let bikeNodeIdx = 0;
+    for (let i = worldLevels.length - 1; i >= 0; i--) {
+      if (levelStars[worldLevels[i].id]?.completed) {
+        bikeNodeIdx = Math.min(i + 1, worldLevels.length - 1);
+        break;
+      }
+    }
+    const bikePos = positions[bikeNodeIdx];
+    const bikeSprite = this.add.image(bikePos.x, bikePos.y - 70, 'worldmap-bike');
+    bikeSprite.setScale(0.6);
+    this.tweens.add({
+      targets: bikeSprite,
+      y: bikePos.y - 80,
+      yoyo: true,
+      repeat: -1,
+      duration: 500,
+      ease: 'Sine.inOut',
     });
 
     // Hem-knapp
