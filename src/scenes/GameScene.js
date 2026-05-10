@@ -116,12 +116,15 @@ export default class GameScene extends Phaser.Scene {
     this.ground = this.add.tileSprite(0, h - groundHeight, levelLength, groundHeight, `ground-${this.biome.id}`)
       .setOrigin(0, 0).setDepth(1);
 
-    // Mörka pits ovanpå ground-sprite
+    // Pits ovanpå ground-sprite — gradient brun→nästan-svart för djup-känsla
     this.levelLoader.pits().forEach((pit) => {
       const pitWidth = pit.xEnd - pit.xStart;
       const pitGfx = this.add.graphics().setDepth(2);
-      pitGfx.fillStyle(0x000000, 1);
+      pitGfx.fillGradientStyle(0x3a2511, 0x3a2511, 0x0a0503, 0x0a0503, 1);
       pitGfx.fillRect(pit.xStart, h - groundHeight, pitWidth, groundHeight);
+      // Mörk linje vid pit-edge top för tydligare "fall ner"-känsla
+      pitGfx.lineStyle(3, 0x1a0d05, 0.9);
+      pitGfx.lineBetween(pit.xStart, h - groundHeight, pit.xEnd, h - groundHeight);
     });
 
     // Ground physics: en static body per mark-segment (mellan pits)
@@ -165,12 +168,10 @@ export default class GameScene extends Phaser.Scene {
         platformTile.refreshBody();
         if (p.bouncy) {
           platformTile.setData('bouncy', true);
-          platformTile.setTint(0x60a5fa);  // ljusblå för visuell distinguishing
-          platformTile.postFX.addGlow(0x3b82f6, 4, 0, false, 0.1, 8);
-        } else {
-          // Subtle dark outline-glow så plattformen separeras från löv-bg
-          platformTile.postFX.addGlow(0x1f2937, 2, 0, false, 0.1, 6);
+          platformTile.setTint(0x60a5fa);  // ljusblå räcker som distinguishing (drop-shadow ger separation)
         }
+        // OBS: postFX.addGlow undviks här — på iPad-GPU blir 17 shader-pipelines
+        // dramatiskt långsamt. Drop-shadow + tint ger samma visuella separation utan kostnad.
       }
     });
 
@@ -316,12 +317,13 @@ export default class GameScene extends Phaser.Scene {
       mon.setData('pokemonId', spot.id);
       mon.setData('shiny', isShiny);
       mon.setData('isBoss', false);
-      mon.postFX.addGlow(0xfde047, 3, 0, false, 0.1, 6);  // gul aura signalerar "fångbar i luften"
+      // OBS: postFX.addGlow per air-pokémon × 16 = för dyrt på iPad-GPU.
+      // Bounce-tween + scale > random-spawns ger ändå tydlig visuell signatur som "fångbar".
+      mon.setScale(1.4);  // större än random (1.35) → POPPAR
       if (isShiny) {
         mon.setTint(0xffffaa);
-        mon.postFX.addShine(0.8, 1.5, 8, false);
       }
-      // Bounce-tween: subtle upp/ner för att signalera interaktivitet
+      // Bounce-tween signalerar interaktivitet
       this.tweens.add({
         targets: mon,
         y: spot.y - 12,
