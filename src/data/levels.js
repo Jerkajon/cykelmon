@@ -170,12 +170,13 @@ const FOREST_1_3 = {
     { x: 4900, y: 400, width: 256 },
     { x: 6000, y: 420, width: 320 },                // bred vila före slutboss
   ],
-  // Wider pits — testar lateral räckvidd. Bouncy-plattformer placerade strategiskt
+  // Pits — bredare än 1-1 men inte ouppnåeligt. Erik:s 3-åring-test (2026-05-10):
+  // 350px var för stort. Justerade till max 230px med bouncy-help.
   pits: [
-    { xStart: 1050, xEnd: 1300 },   // 250px (normal hopp + hold)
-    { xStart: 2050, xEnd: 2330 },   // 280px (bouncy-launch krävs)
-    { xStart: 3500, xEnd: 3850 },   // 350px (bouncy-launch krävs)
-    { xStart: 5200, xEnd: 5500 },   // 300px
+    { xStart: 1100, xEnd: 1280 },   // 180px (normal hopp)
+    { xStart: 2100, xEnd: 2300 },   // 200px (normal hopp + hold)
+    { xStart: 3550, xEnd: 3780 },   // 230px (bouncy-launch hjälper)
+    { xStart: 5250, xEnd: 5460 },   // 210px
   ],
   obstacles: [
     { x: 3300, y: 'ground', type: 'log' },
