@@ -170,13 +170,13 @@ const FOREST_1_3 = {
     { x: 4900, y: 400, width: 256 },
     { x: 6000, y: 420, width: 320 },                // bred vila före slutboss
   ],
-  // Pits — bredare än 1-1 men inte ouppnåeligt. Erik:s 3-åring-test (2026-05-10):
-  // 350px var för stort. Justerade till max 230px med bouncy-help.
+  // Pits — bredare än 1-1 men säkert nåbara. Erik:s son (3-åring) fastnade
+  // på 230px-pits, så minskar ytterligare + fixade pit-detection-bug i GameScene.
   pits: [
-    { xStart: 1100, xEnd: 1280 },   // 180px (normal hopp)
-    { xStart: 2100, xEnd: 2300 },   // 200px (normal hopp + hold)
-    { xStart: 3550, xEnd: 3780 },   // 230px (bouncy-launch hjälper)
-    { xStart: 5250, xEnd: 5460 },   // 210px
+    { xStart: 1100, xEnd: 1240 },   // 140px
+    { xStart: 2100, xEnd: 2260 },   // 160px
+    { xStart: 3600, xEnd: 3780 },   // 180px (största, bouncy-plattform 4 nära)
+    { xStart: 5250, xEnd: 5420 },   // 170px
   ],
   obstacles: [
     { x: 3300, y: 'ground', type: 'log' },

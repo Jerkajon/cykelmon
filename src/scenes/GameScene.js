@@ -681,12 +681,12 @@ export default class GameScene extends Phaser.Scene {
       });
     }
 
-    // Pit-detection: cyklist över pit OCH antingen fallit (y > groundY) eller stuck mot pit-vägg
+    // Pit-detection: cyklist har FAKTISKT fallit i pit (y > groundY).
+    // Tidigare användes även blocked.left/right men det triggade falskt när
+    // bike-body skrapade pit-edge mid-jump → cyklisten "fastnade" i pit-fall
+    // utan att ha fallit. Erik:s son fastnade på 1-3 av denna anledning.
     const overPit = this.platformPhysics.isOverPit(this.bike.x);
-    const fallingOrStuck = this.bike.y > this.groundY ||
-      this.bike.body.blocked.right ||
-      this.bike.body.blocked.left;
-    if (!this.respawning && overPit && fallingOrStuck) {
+    if (!this.respawning && overPit && this.bike.y > this.groundY) {
       this.handlePitFall();
     }
 
