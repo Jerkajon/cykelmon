@@ -215,11 +215,11 @@ const BEACH_2_1 = {
     { x: 5000, y: 400, width: 256 },
     { x: 5800, y: 420, width: 320 },
   ],
-  // Fler vattenhål-pits (5 st), kortare avstånd → tätare hopp-rytm
+  // Fler vattenhål-pits (5 st), kortare avstånd → tätare hopp-rytm. Max 180px (3-åring-säkert)
   pits: [
-    { xStart: 1050, xEnd: 1280 }, { xStart: 1750, xEnd: 1980 },
-    { xStart: 3200, xEnd: 3450 }, { xStart: 4500, xEnd: 4750 },
-    { xStart: 5550, xEnd: 5780 },
+    { xStart: 1080, xEnd: 1240 }, { xStart: 1780, xEnd: 1940 },
+    { xStart: 3240, xEnd: 3400 }, { xStart: 4540, xEnd: 4700 },
+    { xStart: 5580, xEnd: 5740 },
   ],
   obstacles: [{ x: 4000, y: 'ground', type: 'shell' }],
   powerUp: { x: 2200, y: 320, type: 'shield' },
@@ -252,9 +252,10 @@ const BEACH_2_2 = {
     { x: 4900, y: 320, width: 256, bouncy: true },
     { x: 5800, y: 400, width: 320 },
   ],
+  // Max 180px (3-åring-säkert) — slopade tidigare 480px ultra-wide
   pits: [
     { xStart: 1100, xEnd: 1280 }, { xStart: 2400, xEnd: 2580 },
-    { xStart: 4400, xEnd: 4880 },  // 480px bred — kräver bouncy + hold
+    { xStart: 4500, xEnd: 4680 },
     { xStart: 6300, xEnd: 6480 },
   ],
   obstacles: [{ x: 3800, y: 'ground', type: 'shell' }],
@@ -288,8 +289,8 @@ const BEACH_2_3 = {
     { x: 6100, y: 420, width: 256 },
   ],
   pits: [
-    { xStart: 1100, xEnd: 1380 }, { xStart: 2050, xEnd: 2280 },
-    { xStart: 3500, xEnd: 3780 }, { xStart: 4400, xEnd: 4680 },
+    { xStart: 1100, xEnd: 1280 }, { xStart: 2080, xEnd: 2240 },
+    { xStart: 3540, xEnd: 3720 }, { xStart: 4440, xEnd: 4620 },
     { xStart: 5350, xEnd: 5480 },
   ],
   obstacles: [
@@ -329,7 +330,7 @@ const CAVE_3_1 = {
     { x: 5900, y: 400, width: 320 },
   ],
   pits: [
-    { xStart: 1200, xEnd: 1400 }, { xStart: 3900, xEnd: 4100 },
+    { xStart: 1210, xEnd: 1390 }, { xStart: 3910, xEnd: 4090 },
     { xStart: 5750, xEnd: 5880 },
   ],
   // Fler stalagmiter — cave-tema, lärande att auto-vault eller hold-jump
@@ -411,8 +412,8 @@ const CAVE_3_3 = {
     { x: 6100, y: 400, width: 256 },
   ],
   pits: [
-    { xStart: 1050, xEnd: 1280 }, { xStart: 1850, xEnd: 2080 },
-    { xStart: 3300, xEnd: 3680 }, { xStart: 4900, xEnd: 5280 },
+    { xStart: 1080, xEnd: 1260 }, { xStart: 1880, xEnd: 2060 },
+    { xStart: 3400, xEnd: 3580 }, { xStart: 4980, xEnd: 5160 },
     { xStart: 6050, xEnd: 6080 },
   ],
   obstacles: [
@@ -455,12 +456,12 @@ const OCEAN_4_1 = {
     { x: 5500, y: 380, width: 200, bouncy: true },
     { x: 6300, y: 400, width: 256 },
   ],
-  // Många wide pits — hopp över vatten
+  // Många pits — hopp över vatten. Max 180px (3-åring-säkert)
   pits: [
-    { xStart: 1050, xEnd: 1280 }, { xStart: 1750, xEnd: 1980 },
-    { xStart: 2450, xEnd: 2680 }, { xStart: 3150, xEnd: 3380 },
-    { xStart: 3850, xEnd: 4080 }, { xStart: 4550, xEnd: 4780 },
-    { xStart: 5250, xEnd: 5480 }, { xStart: 5950, xEnd: 6280 },
+    { xStart: 1080, xEnd: 1240 }, { xStart: 1780, xEnd: 1940 },
+    { xStart: 2480, xEnd: 2640 }, { xStart: 3180, xEnd: 3340 },
+    { xStart: 3880, xEnd: 4040 }, { xStart: 4580, xEnd: 4740 },
+    { xStart: 5280, xEnd: 5440 }, { xStart: 5980, xEnd: 6160 },
   ],
   obstacles: [],  // Inga obstacles — ren bouncy-platforming
   powerUp: { x: 3500, y: 280, type: 'shield' },
@@ -494,10 +495,10 @@ const OCEAN_4_2 = {
     { x: 6100, y: 400, width: 320 },
   ],
   pits: [
-    { xStart: 1100, xEnd: 1280 }, { xStart: 1850, xEnd: 2080 },
-    { xStart: 2650, xEnd: 2880 }, { xStart: 3450, xEnd: 3680 },
-    { xStart: 4250, xEnd: 4480 }, { xStart: 5050, xEnd: 5280 },
-    { xStart: 5850, xEnd: 6080 },
+    { xStart: 1100, xEnd: 1280 }, { xStart: 1880, xEnd: 2060 },
+    { xStart: 2680, xEnd: 2860 }, { xStart: 3480, xEnd: 3660 },
+    { xStart: 4280, xEnd: 4460 }, { xStart: 5080, xEnd: 5260 },
+    { xStart: 5880, xEnd: 6060 },
   ],
   obstacles: [],
   powerUp: { x: 4600, y: 280, type: 'magnet' },
@@ -529,14 +530,15 @@ const OCEAN_4_3 = {
     { x: 5500, y: 360, width: 200, bouncy: true },
     { x: 6300, y: 420, width: 256 },
   ],
+  // Slopade tidigare 380px ultra-wide. Max 180px (3-åring-säkert)
   pits: [
-    { xStart: 1100, xEnd: 1480 },  // Ultra-wide 380px
-    { xStart: 2050, xEnd: 2280 },
-    { xStart: 2850, xEnd: 3080 },
-    { xStart: 3650, xEnd: 3880 },
-    { xStart: 4450, xEnd: 4680 },
-    { xStart: 5250, xEnd: 5480 },
-    { xStart: 6050, xEnd: 6280 },
+    { xStart: 1100, xEnd: 1280 },
+    { xStart: 2080, xEnd: 2260 },
+    { xStart: 2880, xEnd: 3060 },
+    { xStart: 3680, xEnd: 3860 },
+    { xStart: 4480, xEnd: 4660 },
+    { xStart: 5280, xEnd: 5460 },
+    { xStart: 6080, xEnd: 6260 },
   ],
   obstacles: [],
   powerUp: { x: 4000, y: 240, type: 'shield' },
