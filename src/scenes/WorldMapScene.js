@@ -105,6 +105,50 @@ export default class WorldMapScene extends Phaser.Scene {
       fontFamily: 'Arial Black',
     }).setInteractive({ useHandCursor: true });
     home.on('pointerdown', () => this.scene.start('HomeScene'));
+
+    // Värld-navigation: pilar för att byta mellan världar.
+    const WORLDS = ['forest', 'beach', 'cave', 'ocean'];
+    const currentIdx = WORLDS.indexOf(this.currentWorld);
+    const allCurrentCompleted = worldLevels.every((l) => levelStars[l.id]?.completed);
+
+    // Förra värld (vänster pil) — alltid tillgänglig om vi inte är på första
+    if (currentIdx > 0) {
+      const prevWorld = WORLDS[currentIdx - 1];
+      const prevBtn = this.add.text(40, h / 2, '◀', {
+        fontSize: '64px',
+        color: '#fff',
+        stroke: '#000',
+        strokeThickness: 6,
+        fontFamily: 'Arial Black',
+      }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+      prevBtn.on('pointerdown', () => this.scene.start('WorldMapScene', { worldId: prevWorld }));
+    }
+
+    // Nästa värld (höger pil) — låst tills alla 3 i nuvarande är completed
+    if (currentIdx < WORLDS.length - 1) {
+      const nextWorld = WORLDS[currentIdx + 1];
+      const unlocked = allCurrentCompleted;
+      const nextBtn = this.add.text(w - 40, h / 2, unlocked ? '▶' : '🔒', {
+        fontSize: unlocked ? '64px' : '48px',
+        color: unlocked ? '#fff' : '#888',
+        stroke: '#000',
+        strokeThickness: 6,
+        fontFamily: 'Arial Black',
+      }).setOrigin(0.5);
+      if (unlocked) {
+        nextBtn.setInteractive({ useHandCursor: true });
+        nextBtn.on('pointerdown', () => this.scene.start('WorldMapScene', { worldId: nextWorld }));
+        // Pulsa för att signalera "ny värld upplåst!"
+        this.tweens.add({
+          targets: nextBtn,
+          scale: { from: 1, to: 1.2 },
+          yoyo: true,
+          repeat: -1,
+          duration: 500,
+          ease: 'Sine.inOut',
+        });
+      }
+    }
   }
 
   renderNode(x, y, level, stars, unlocked) {
