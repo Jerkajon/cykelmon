@@ -29,6 +29,10 @@ export class LevelLoader {
     return this.data.randomSpots;
   }
 
+  airPokemon() {
+    return this.data.airPokemon || [];
+  }
+
   powerUp() {
     return this.data.powerUp || null;
   }

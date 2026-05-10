@@ -99,9 +99,18 @@ export default class GameScene extends Phaser.Scene {
     this.physics.world.setBounds(0, 0, levelLength, h);
     this.cameras.main.setBounds(0, 0, levelLength, h);
 
-    // Bakgrund — tileSprite täcker hela leveln
-    this.bgImage = this.add.tileSprite(0, 0, levelLength, h, `bg-${this.biome.id}`)
-      .setOrigin(0, 0).setDepth(0);
+    // Parallax-bakgrund i 3 lager:
+    //   Lager 0 (sky): färggradient, scrollFactor 0 — fast på kameran
+    //   Lager 1 (mid): biome-bg som tileSprite, parallax 30% (manuell tilePositionX)
+    //   Lager 2 (front): ground (separata tileSprite längre ner) — full scroll med world
+    const sky = this.biome.skyGradient || { top: 0xa3d8ff, bottom: 0xfde7c5 };
+    this.skyGfx = this.add.graphics().setDepth(0).setScrollFactor(0);
+    this.skyGfx.fillGradientStyle(sky.top, sky.top, sky.bottom, sky.bottom, 1);
+    this.skyGfx.fillRect(0, 0, w, h);
+
+    this.bgMid = this.add.tileSprite(0, 0, w, h, `bg-${this.biome.id}`)
+      .setOrigin(0, 0).setDepth(0.5).setScrollFactor(0).setAlpha(0.6);
+    this.bgParallaxFactor = 0.3;
 
     // Mark — tileSprite täcker hela leveln
     this.ground = this.add.tileSprite(0, h - groundHeight, levelLength, groundHeight, `ground-${this.biome.id}`)
@@ -139,16 +148,29 @@ export default class GameScene extends Phaser.Scene {
       seg.refreshBody();
     }
 
-    // Plattformar från level-data (staticGroup — immobile physics objects)
+    // Plattformar från level-data (staticGroup — immobile physics objects).
+    // Bouncy-plattformar tintas blått + studsar cyklisten högre vid landning.
     this.platforms = this.physics.add.staticGroup();
     const platformKey = `platform-${this.biome.id}`;
     this.levelLoader.platforms().forEach((p) => {
       const tilesNeeded = Math.ceil(p.width / 128);
+      // Drop-shadow under hela plattformen så den poppar mot löv-bakgrunden
+      const shadow = this.add.rectangle(p.x, p.y + 24, p.width, 8, 0x000000, 0.35)
+        .setOrigin(0, 0).setDepth(2.5);
       for (let i = 0; i < tilesNeeded; i++) {
         const platformTile = this.platforms.create(p.x + i * 128, p.y, platformKey);
         platformTile.setOrigin(0, 0);
         platformTile.setDisplaySize(128, 24);
+        platformTile.setDepth(3);
         platformTile.refreshBody();
+        if (p.bouncy) {
+          platformTile.setData('bouncy', true);
+          platformTile.setTint(0x60a5fa);  // ljusblå för visuell distinguishing
+          platformTile.postFX.addGlow(0x3b82f6, 4, 0, false, 0.1, 8);
+        } else {
+          // Subtle dark outline-glow så plattformen separeras från löv-bg
+          platformTile.postFX.addGlow(0x1f2937, 2, 0, false, 0.1, 6);
+        }
       }
     });
 
@@ -171,9 +193,19 @@ export default class GameScene extends Phaser.Scene {
     this.physics.add.collider(this.bike, this.groundBodies);
     this.respawning = false;
 
+    // Pedaling-känsla: liten angle-wobble i loop (visuell, påverkar inte AABB-physics)
+    this.bikePedalTween = this.tweens.add({
+      targets: this.bike,
+      angle: { from: -3, to: 3 },
+      duration: 180,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.inOut',
+    });
+
     // Kamera följer cyklisten, konstant forward-hastighet
     this.cameras.main.startFollow(this.bike, true, 0.5, 0.0);
-    this.forwardSpeed = 280;
+    this.forwardSpeed = 200;
 
     // Bake svart outline in i obstacle-texturer (en gång) → ingen runtime-glow.
     ['obstacle-rock', 'obstacle-log', 'obstacle-puddle', 'obstacle-shell', 'obstacle-stalagmite']
@@ -207,8 +239,13 @@ export default class GameScene extends Phaser.Scene {
 
     this.physics.add.overlap(this.bike, this.pokemons, (bike, mon) => this.handlePokemonPickup(mon));
 
-    // Plattform-collider
-    this.physics.add.collider(this.bike, this.platforms);
+    // Plattform-collider med bouncy-boost vid landning
+    this.physics.add.collider(this.bike, this.platforms, (bike, platform) => {
+      if (platform.getData('bouncy') && bike.body.touching.down) {
+        bike.setVelocityY(-1100);  // kraftigare än manuellt hopp -820
+        this.safePlay('sfx-jump', { volume: 0.6, rate: 1.3 });  // pitched-up "boing"
+      }
+    });
 
     // Power-ups
     this.powerUps = this.physics.add.group({ allowGravity: false });
@@ -229,8 +266,13 @@ export default class GameScene extends Phaser.Scene {
       if (this.bgm) { this.bgm.stop(); this.bgm.destroy(); }
     });
 
-    // Tap → hopp om vi står på marken.
-    this.input.on('pointerdown', () => this.tryJump());
+    // Hold-to-jump: kort tap = liten hopp, längre hold = större hopp.
+    // Tre nivåer: -500 vid release < 80ms, -820 vid hold > 80ms, -1050 vid hold > 180ms.
+    this.input.on('pointerdown', () => this.startJump());
+    this.input.on('pointerup', () => this.endJump());
+    this.jumpHeld = false;
+    this.jumpStartTime = 0;
+    this.jumpUpgrade = 0;
 
     // Spawn level-data entiteter
     // Obstacles vid fasta positioner
@@ -261,6 +303,33 @@ export default class GameScene extends Phaser.Scene {
         mon.setTint(0xffffaa);
         mon.postFX.addShine(0.8, 1.5, 8, false);
       }
+    });
+
+    // Luft-pokémon (coin-block-stil) — pokémon hängandes över plattformar/pits.
+    // Hopp för att fånga = positiv reward-loop, motiverar rörelsens vertikalitet.
+    this.levelLoader.airPokemon().forEach((spot) => {
+      const isShiny = Math.random() < (1 / 50);
+      const mon = this.pokemons.create(spot.x, spot.y, `pokemon-${spot.id}`)
+        .setDepth(4).setScale(1.2);
+      mon.body.setSize(45, 45);
+      mon.body.setAllowGravity(false);
+      mon.setData('pokemonId', spot.id);
+      mon.setData('shiny', isShiny);
+      mon.setData('isBoss', false);
+      mon.postFX.addGlow(0xfde047, 3, 0, false, 0.1, 6);  // gul aura signalerar "fångbar i luften"
+      if (isShiny) {
+        mon.setTint(0xffffaa);
+        mon.postFX.addShine(0.8, 1.5, 8, false);
+      }
+      // Bounce-tween: subtle upp/ner för att signalera interaktivitet
+      this.tweens.add({
+        targets: mon,
+        y: spot.y - 12,
+        duration: 600,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.inOut',
+      });
     });
 
     // Power-up (om finns i level-data)
@@ -321,11 +390,18 @@ export default class GameScene extends Phaser.Scene {
     this.bike.setVelocityX(this.forwardSpeed);
   }
 
-  tryJump() {
+  startJump() {
     if (this.bike.body.blocked.down || this.bike.body.touching.down) {
-      this.bike.setVelocityY(-820);
-      this.safePlay('sfx-jump', { volume: 0.6 });
+      this.bike.setVelocityY(-500);  // initialt liten hopp
+      this.jumpHeld = true;
+      this.jumpStartTime = this.time.now;
+      this.jumpUpgrade = 0;
+      this.safePlay('sfx-jump', { volume: 0.5 });
     }
+  }
+
+  endJump() {
+    this.jumpHeld = false;
   }
 
   handleBonk(obstacle) {
@@ -562,6 +638,24 @@ export default class GameScene extends Phaser.Scene {
   }
 
   update(time, delta) {
+    // Parallax mid-layer: scrolla 30% av kamera-position för djup-känsla
+    if (this.bgMid) {
+      this.bgMid.tilePositionX = this.cameras.main.scrollX * this.bgParallaxFactor;
+    }
+
+    // Hold-to-jump upgrade: medan pointer hålls och cyklist är på väg upp,
+    // uppgradera hopp i två steg för variabel hopp-höjd.
+    if (this.jumpHeld && this.bike.body.velocity.y < 0) {
+      const heldFor = this.time.now - this.jumpStartTime;
+      if (this.jumpUpgrade < 1 && heldFor > 80) {
+        this.bike.setVelocityY(-820);
+        this.jumpUpgrade = 1;
+      } else if (this.jumpUpgrade < 2 && heldFor > 180) {
+        this.bike.setVelocityY(-1050);
+        this.jumpUpgrade = 2;
+      }
+    }
+
     // Cyklist-velocity: stopp vid level-slut, bonk-slowdown annars framåt
     if (this.bike.x >= this.levelLoader.length - 100) {
       this.bike.setVelocityX(0);
