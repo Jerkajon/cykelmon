@@ -2,26 +2,28 @@ import Phaser from 'phaser';
 import { LEVELS } from '../data/levels.js';
 import { createStorage, getAllLevelStars } from '../utils/storage.js';
 
+// Node-positioner anpassade per värld baserat på de faktiska clearings
+// i de DrawThings-genererade world-map-bakgrunderna.
 const NODE_POSITIONS = {
   forest: [
-    { x: 250, y: 540 },   // 1-1 (start, lower-left)
-    { x: 640, y: 380 },   // 1-2 (mid)
-    { x: 1030, y: 220 },  // 1-3 (upper-right)
+    { x: 190, y: 470 },   // 1-1 (lower-left clearing där stigen börjar)
+    { x: 620, y: 280 },   // 1-2 (centrum-öppning där stigar möts)
+    { x: 1090, y: 360 },  // 1-3 (höger-mitten där stigen försvinner)
   ],
   beach: [
-    { x: 250, y: 540 },
-    { x: 640, y: 380 },
-    { x: 1030, y: 220 },
+    { x: 230, y: 380 },   // 2-1 (vänster sandyta)
+    { x: 620, y: 250 },   // 2-2 (center sand-clearing)
+    { x: 1010, y: 410 },  // 2-3 (höger med palmer)
   ],
   cave: [
-    { x: 250, y: 540 },
-    { x: 640, y: 380 },
-    { x: 1030, y: 220 },
+    { x: 190, y: 460 },   // 3-1 (vid första torch)
+    { x: 640, y: 230 },   // 3-2 (största kristall-clearing)
+    { x: 1080, y: 470 },  // 3-3 (höger sten-yta)
   ],
   ocean: [
-    { x: 250, y: 540 },
-    { x: 640, y: 380 },
-    { x: 1030, y: 220 },
+    { x: 360, y: 480 },   // 4-1 (nedre vänster ö)
+    { x: 640, y: 360 },   // 4-2 (mitten där broar möts)
+    { x: 940, y: 200 },   // 4-3 (övre höger ö)
   ],
 };
 
