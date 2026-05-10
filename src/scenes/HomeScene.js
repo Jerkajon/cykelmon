@@ -126,7 +126,7 @@ export default class HomeScene extends Phaser.Scene {
       fontFamily: 'Arial Black', fontSize: Math.floor(h * 0.06) + 'px',
       color: '#1f2937',
     }).setOrigin(0.5);
-    playBtn.on('pointerdown', () => this.scene.start('GameScene'));
+    playBtn.on('pointerdown', () => this.scene.start('WorldMapScene'));
     this.tweens.add({
       targets: [playBtn, playLabel],
       scale: { from: 1, to: 1.04 },
