@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { StickerBook } from '../systems/StickerBook.js';
-import { createStorage } from '../utils/storage.js';
+import { createStorage, setLevelStars } from '../utils/storage.js';
 import { POKEMON } from '../data/pokemon.js';
 import { biomeById } from '../data/biomes.js';
 import { activeCycle, unlockedCycles } from '../data/cycles.js';
@@ -465,10 +465,9 @@ export default class GameScene extends Phaser.Scene {
     });
   }
 
-  async handleBossPickup() {
+  handleBossPickup() {
     const stars = this.starTracker.computeStars();
-    const { createStorage: cs, setLevelStars } = await import('../utils/storage.js');
-    const storage = cs();
+    const storage = createStorage();
     setLevelStars(storage, this.levelId, stars);
     this.scene.start('ResultScene', {
       levelId: this.levelId,
