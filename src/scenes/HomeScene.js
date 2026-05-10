@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { createStorage } from '../utils/storage.js';
-import { CYCLES, unlockedCycles, nextCycle } from '../data/cycles.js';
+import { unlockedCycles, nextCycle } from '../data/cycles.js';
 
 const SHOWCASE = [25, 133, 7, 1, 16, 43, 79];
 const LIFETIME_KEY = 'pokemoncykelspel.lifetimeCount';
@@ -208,13 +208,13 @@ export default class HomeScene extends Phaser.Scene {
   makePokeballTexture() {
     if (this.textures.exists('pokeball-icon')) return;
     const g = this.add.graphics();
-    // Röd överdel
+    // Röd överdel (CW från 180° till 0° via 270°/UP i Y-down)
     g.fillStyle(0xee1515, 1);
-    g.slice(20, 20, 18, Math.PI, 0, true);
+    g.slice(20, 20, 18, Math.PI, 0, false);
     g.fillPath();
-    // Vit underdel
+    // Vit underdel (CW från 0° till 180° via 90°/DOWN)
     g.fillStyle(0xffffff, 1);
-    g.slice(20, 20, 18, 0, Math.PI, true);
+    g.slice(20, 20, 18, 0, Math.PI, false);
     g.fillPath();
     // Svart kant
     g.lineStyle(2.5, 0x000000, 1);

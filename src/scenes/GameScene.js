@@ -6,7 +6,7 @@ import { createStorage } from '../utils/storage.js';
 import { POKEMON } from '../data/pokemon.js';
 import { BIOMES } from '../data/biomes.js';
 import { BiomeManager } from '../systems/BiomeManager.js';
-import { CYCLES, activeCycle, unlockedCycles } from '../data/cycles.js';
+import { activeCycle, unlockedCycles } from '../data/cycles.js';
 
 const LIFETIME_KEY = 'pokemoncykelspel.lifetimeCount';
 const SELECTED_KEY = 'pokemoncykelspel.selectedCycle';
@@ -51,6 +51,7 @@ export default class GameScene extends Phaser.Scene {
     this.load.audio('bgm-forest', 'audio/bgm-forest.wav');
     this.load.audio('bgm-beach', 'audio/bgm-beach.wav');
     this.load.audio('bgm-cave', 'audio/bgm-cave.wav');
+    this.load.audio('bgm-ocean', 'audio/bgm-ocean.wav');
     this.load.audio('sfx-jump', 'audio/sfx-jump.wav');
     this.load.audio('sfx-pickup', 'audio/sfx-pickup.wav');
     this.load.audio('sfx-bonk', 'audio/sfx-bonk.wav');
@@ -317,10 +318,10 @@ export default class GameScene extends Phaser.Scene {
   makePokeballTexture() {
     const g = this.add.graphics();
     g.fillStyle(0xee1515, 1);
-    g.slice(20, 20, 18, Math.PI, 0, true);
+    g.slice(20, 20, 18, Math.PI, 0, false);
     g.fillPath();
     g.fillStyle(0xffffff, 1);
-    g.slice(20, 20, 18, 0, Math.PI, true);
+    g.slice(20, 20, 18, 0, Math.PI, false);
     g.fillPath();
     g.lineStyle(2.5, 0x000000, 1);
     g.strokeCircle(20, 20, 18);

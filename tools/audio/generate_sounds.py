@@ -234,6 +234,27 @@ def bgm_cave():
     return melody + bass
 
 
+def bgm_ocean():
+    """Drömmande hav-loop ~10s. Tempo 80 BPM, D major. Vågrullande melodi."""
+    bpm = 80
+    beat = 60.0 / bpm  # 0.75s
+    # Lugn melodi som rullar upp och ner som vågor.
+    melody_notes = ["D5", "F5", "A5", "F5", "D5", "F5", "A5", "G5",
+                    "F5", "A5", "G5", "F5", "E5", "D5", "F5", "D5"]
+    melody_seq = [(NOTES[n], i * beat / 2, beat / 2 * 0.95, triangle) for i, n in enumerate(melody_notes)]
+    # Bas: D-A-D-A pulse
+    bass_notes = ["D3", "A3", "D3", "A3"] * 2
+    bass_seq = [(NOTES[n], i * beat, beat * 0.95, square) for i, n in enumerate(bass_notes)]
+    total = 8 * beat
+    melody = play_sequence(melody_seq, total, gain=0.4)
+    bass = play_sequence(bass_seq, total, gain=0.25)
+    # Mjuk vågpad: låg sinus med långsam vibrato → "djupa havet" känsla
+    n = int(SR * total)
+    t = np.arange(n) / SR
+    pad = sine(NOTES["D3"] / 2, total) * (0.10 + 0.04 * np.sin(2 * np.pi * 0.4 * t))
+    return melody + bass + pad
+
+
 # ─── Main ──────────────────────────────────────────────────────────────
 
 def main():
@@ -256,6 +277,7 @@ def main():
         "bgm-forest.wav": bgm_forest(),
         "bgm-beach.wav": bgm_beach(),
         "bgm-cave.wav": bgm_cave(),
+        "bgm-ocean.wav": bgm_ocean(),
     }
     for name, samples in bgm.items():
         write_wav(args.out / name, samples, gain=0.45)
